@@ -68,7 +68,7 @@ else
 end
 
 -- =============================
--- 📍 TELEPORT SYSTEM
+-- 📍 TELEPORT SYSTEM (FIXED)
 -- =============================
 local Teleports = {
     {"Irish Islands",      "mapa2"},
@@ -100,7 +100,7 @@ local function teleportToMap(workspaceName)
     if not map then
         Rayfield:Notify({
             Title = "RideStorm",
-            Content = "Mapa no cargado (streaming). Intenta de nuevo.",
+            Content = "Mapa no cargado (streaming). Reintentando...",
             Duration = 3
         })
         return
@@ -110,18 +110,17 @@ local function teleportToMap(workspaceName)
     if target then
         hrp.CFrame = target.CFrame + Vector3.new(0, 5, 0)
     else
-        warn("RideStorm: No BasePart en", workspaceName)
+        warn("RideStorm: No BasePart en " .. workspaceName)
     end
 end
 
--- 🔧 DROPDOWN FIX (IMPORTANTE)
+-- ✅ DROPDOWN CORRECTO
 TeleportTab:CreateDropdown({
     Name = "Seleccionar mapa",
     Options = teleportNames,
-    CurrentOption = { teleportNames[1] },
+    CurrentOption = teleportNames[1], -- STRING, NO tabla
     MultipleOptions = false,
-    Callback = function(option)
-        local selected = option[1] -- 🔥 FIX
+    Callback = function(selected) -- STRING
         for _, v in ipairs(Teleports) do
             if v[1] == selected then
                 teleportToMap(v[2])
@@ -130,6 +129,7 @@ TeleportTab:CreateDropdown({
         end
     end
 })
+
 
 -- =============================
 -- 🚚 AUTOFARM

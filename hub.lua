@@ -1,8 +1,11 @@
--- RideStorm Hub (ESTABLE Y LIMPIO)
+--==================================================
+-- RideStorm Hub 🏍️ (ESTABLE + STREAMING SAFE)
+-- By GaboGC
+--==================================================
 
---------------------------------------------------
--- Multi-PlaceId
---------------------------------------------------
+----------------------------------------------------
+-- Multi-PlaceId (opcional)
+----------------------------------------------------
 local SupportedPlaces = {
     [game.PlaceId] = true
 }
@@ -12,70 +15,121 @@ if not SupportedPlaces[game.PlaceId] then
     return
 end
 
---------------------------------------------------
--- Rayfield (OFICIAL)
---------------------------------------------------
+----------------------------------------------------
+-- Rayfield (FORMA OFICIAL)
+----------------------------------------------------
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
---------------------------------------------------
+----------------------------------------------------
 -- Window
---------------------------------------------------
+----------------------------------------------------
 local Window = Rayfield:CreateWindow({
     Name = "RideStorm 🏍️",
     LoadingTitle = "RideStorm",
     LoadingSubtitle = "By GaboGC",
-    ConfigurationSaving = { Enabled = false }
+    ConfigurationSaving = {
+        Enabled = false
+    }
 })
 
---------------------------------------------------
+----------------------------------------------------
 -- Tabs
---------------------------------------------------
+----------------------------------------------------
 local DeliveryTab = Window:CreateTab("🚚 Delivery")
 local TeleportTab = Window:CreateTab("📍 Teleports")
 local MiscTab = Window:CreateTab("🎲 Misc")
 
---------------------------------------------------
--- Player & Money Tracking
---------------------------------------------------
-local player = game.Players.LocalPlayer
-local leaderstats = player:WaitForChild("leaderstats")
-local cash = leaderstats:WaitForChild("Cash")
-
-local lastCash = cash.Value
-local earnedMoney = 0
-
---------------------------------------------------
+----------------------------------------------------
 -- Global State
---------------------------------------------------
+----------------------------------------------------
 getgenv().RideStorm = {
-    Farming = false
+    Farming = false,
+    Money = 0,
+    LastMoney = 0
 }
 
---------------------------------------------------
--- UI: Money Label
---------------------------------------------------
+----------------------------------------------------
+-- Player refs
+----------------------------------------------------
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+----------------------------------------------------
+-- SAFE TELEPORT (Streaming Compatible)
+----------------------------------------------------
+local function teleportToMap(mapName)
+    local char = player.Character or player.CharacterAdded:Wait()
+    local hrp = char:WaitForChild("HumanoidRootPart")
+
+    local map = workspace:WaitForChild(mapName, 10)
+    if not map then
+        Rayfield:Notify({
+            Title = "RideStorm",
+            Content = "No se pudo cargar: "..mapName,
+            Duration = 4
+        })
+        return false
+    end
+
+    local part =
+        map.PrimaryPart
+        or map:FindFirstChildWhichIsA("BasePart", true)
+
+    if not part then
+        warn("RideStorm: "..mapName.." no tiene BasePart")
+        return false
+    end
+
+    hrp.CFrame = part.CFrame + Vector3.new(0,5,0)
+    return true
+end
+
+----------------------------------------------------
+-- 💰 MONEY TRACKER REAL (NO FALSO)
+----------------------------------------------------
+local function setupMoneyTracker()
+    local stats = player:WaitForChild("leaderstats", 10)
+    if not stats then return end
+
+    local money =
+        stats:FindFirstChild("Money")
+        or stats:FindFirstChild("Cash")
+        or stats:FindFirstChild("Coins")
+
+    if not money then return end
+
+    getgenv().RideStorm.LastMoney = money.Value
+
+    money:GetPropertyChangedSignal("Value"):Connect(function()
+        local diff = money.Value - getgenv().RideStorm.LastMoney
+        if diff > 0 then
+            getgenv().RideStorm.Money += diff
+            getgenv().RideStorm.LastMoney = money.Value
+            moneyLabel:Set("💰 Dinero ganado: $"..getgenv().RideStorm.Money)
+        end
+    end)
+end
+
+----------------------------------------------------
+-- DELIVERY UI
+----------------------------------------------------
+DeliveryTab:CreateSection("Auto Delivery")
+
 local moneyLabel = DeliveryTab:CreateLabel("💰 Dinero ganado: $0")
 
--- Actualizar dinero REAL ganado
-cash:GetPropertyChangedSignal("Value"):Connect(function()
-    local newCash = cash.Value
-    local diff = newCash - lastCash
-    if diff > 0 then
-        earnedMoney += diff
-        moneyLabel:Set("💰 Dinero ganado: $" .. earnedMoney)
-    end
-    lastCash = newCash
-end)
-
---------------------------------------------------
--- Auto Farm Toggle
---------------------------------------------------
 DeliveryTab:CreateToggle({
     Name = "Auto Delivery Farm",
     CurrentValue = false,
     Callback = function(state)
         getgenv().RideStorm.Farming = state
+
         if state then
+            -- Ir primero al mapa del trabajo
+            local ok = teleportToMap("JOB1")
+            if not ok then return end
+
+            task.wait(2)
+
             loadstring(game:HttpGet(
                 "https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/autofarm.lua"
             ))()
@@ -83,12 +137,13 @@ DeliveryTab:CreateToggle({
     end
 })
 
---------------------------------------------------
--- TELEPORTS (ORDEN TUYO, PATH EXACTO)
---------------------------------------------------
-TeleportTab:CreateSection("🌍 Map Teleports")
+----------------------------------------------------
+-- 📍 TELEPORTS
+----------------------------------------------------
+TeleportTab:CreateSection("Maps")
 
 local Teleports = {
+    { "Truckers Bay (Delivery)", "JOB1" },
     { "Irish Islands", "mapa2" },
     { "Alp Mountains", "mapa3" },
     { "Track / Drag Strip", "mapa4" },
@@ -110,47 +165,35 @@ for _, v in ipairs(Teleports) do
 end
 
 TeleportTab:CreateDropdown({
-    Name = "Seleccionar mapa",
+    Name = "Seleccionar Mapa",
     Options = teleportNames,
     CurrentOption = teleportNames[1],
-    MultipleOptions = false,
     Callback = function(choice)
-        local char = player.Character or player.CharacterAdded:Wait()
-        local hrp = char:WaitForChild("HumanoidRootPart")
-
         for _, v in ipairs(Teleports) do
             if v[1] == choice then
-                local map = workspace:FindFirstChild(v[2])
-                if map then
-                    local part = map.PrimaryPart or map:FindFirstChildWhichIsA("BasePart", true)
-                    if part then
-                        hrp.CFrame = part.CFrame + Vector3.new(0,3,0)
-                    else
-                        warn("RideStorm: mapa sin BasePart:", v[2])
-                    end
-                else
-                    warn("RideStorm: no existe workspace." .. v[2])
-                end
+                teleportToMap(v[2])
                 break
             end
         end
     end
 })
 
---------------------------------------------------
--- Misc
---------------------------------------------------
+----------------------------------------------------
+-- 🎲 MISC
+----------------------------------------------------
 MiscTab:CreateButton({
     Name = "Reiniciar contador de dinero",
     Callback = function()
-        earnedMoney = 0
+        getgenv().RideStorm.Money = 0
         moneyLabel:Set("💰 Dinero ganado: $0")
     end
 })
 
---------------------------------------------------
--- Notify
---------------------------------------------------
+----------------------------------------------------
+-- INIT
+----------------------------------------------------
+task.spawn(setupMoneyTracker)
+
 Rayfield:Notify({
     Title = "RideStorm",
     Content = "Hub cargado correctamente",

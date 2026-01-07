@@ -26,7 +26,7 @@ RS.Tabs = {
 
 -- Sections (IMPORTANT: nunca dejar tabs vacíos)
 RS.Sections = {
-    Delivery = RS.Tabs.Delivery:CreateSection("Auto Farm"),
+    Delivery = RS.Tabs.Delivery:CreateSection("Auto Delivery"),
     Teleports = RS.Tabs.Teleports:CreateSection("Locations"),
     Misc = RS.Tabs.Misc:CreateSection("Utilities")
 }

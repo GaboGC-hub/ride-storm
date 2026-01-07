@@ -10,3 +10,4 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/GaboGC-hub/ride-storm
 loadstring(game:HttpGet("https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/features/delivery.lua"))()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/features/teleports.lua"))()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/features/misc.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/features/money.lua"))()

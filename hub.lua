@@ -68,8 +68,12 @@ else
 end
 
 -- =============================
--- 📍 TELEPORT SYSTEM (FIXED)
+-- 📍 TELEPORT SYSTEM (BOTÓN)
 -- =============================
+
+local player = game.Players.LocalPlayer
+
+-- Lista ordenada como tú querías
 local Teleports = {
     {"Irish Islands",      "mapa2"},
     {"Alp Mountains",      "mapa3"},
@@ -87,48 +91,76 @@ local Teleports = {
     {"Truckers Bay (JOB)", "JOB1"}
 }
 
+-- Solo nombres para el dropdown
 local teleportNames = {}
 for _, v in ipairs(Teleports) do
     table.insert(teleportNames, v[1])
 end
 
+-- Estado del mapa seleccionado
+local selectedMapName = teleportNames[1]
+
+-- =============================
+-- 🔧 FUNCIÓN DE TP REAL
+-- =============================
 local function teleportToMap(workspaceName)
     local char = player.Character or player.CharacterAdded:Wait()
     local hrp = char:WaitForChild("HumanoidRootPart")
 
     local map = workspace:FindFirstChild(workspaceName)
+
     if not map then
         Rayfield:Notify({
             Title = "RideStorm",
-            Content = "Mapa no cargado (streaming). Reintentando...",
-            Duration = 3
+            Content = "Mapa no cargado aún. Acércate o reintenta.",
+            Duration = 4
         })
         return
     end
 
+    -- Buscar cualquier BasePart dentro del mapa
     local target = map:FindFirstChildWhichIsA("BasePart", true)
-    if target then
-        hrp.CFrame = target.CFrame + Vector3.new(0, 5, 0)
-    else
-        warn("RideStorm: No BasePart en " .. workspaceName)
+
+    if not target then
+        Rayfield:Notify({
+            Title = "RideStorm",
+            Content = "No se encontró un punto válido en el mapa.",
+            Duration = 4
+        })
+        return
     end
+
+    hrp.CFrame = target.CFrame + Vector3.new(0, 6, 0)
 end
 
--- ✅ DROPDOWN CORRECTO
+-- =============================
+-- 📋 DROPDOWN (SOLO SELECCIONA)
+-- =============================
 TeleportTab:CreateDropdown({
     Name = "Seleccionar mapa",
     Options = teleportNames,
-    CurrentOption = teleportNames[1], -- STRING, NO tabla
+    CurrentOption = selectedMapName,
     MultipleOptions = false,
-    Callback = function(selected) -- STRING
+    Callback = function(option)
+        selectedMapName = option -- 🔥 guardar selección
+    end
+})
+
+-- =============================
+-- 🚀 BOTÓN DE TELEPORT
+-- =============================
+TeleportTab:CreateButton({
+    Name = "Teletransportarse",
+    Callback = function()
         for _, v in ipairs(Teleports) do
-            if v[1] == selected then
+            if v[1] == selectedMapName then
                 teleportToMap(v[2])
                 break
             end
         end
     end
 })
+
 
 
 -- =============================

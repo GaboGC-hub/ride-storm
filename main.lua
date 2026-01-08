@@ -59,12 +59,24 @@ DeliveryTab:CreateToggle({
     Callback = function(v)
         getgenv().RideStorm.BoxFarm = v
         if v then
+            local char = player.Character or player.CharacterAdded:Wait()
+            local hrp = char:WaitForChild("HumanoidRootPart")
+
+            if workspace:FindFirstChild("JOB1") then
+                local job = workspace.JOB1:FindFirstChildWhichIsA("BasePart", true)
+                if job then
+                    hrp.CFrame = job.CFrame + Vector3.new(0,5,0)
+                    task.wait(2) -- esperar streaming
+                end
+            end
+
             loadstring(game:HttpGet(
                 "https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/autofarm.lua"
             ))()
         end
     end
 })
+
 
 ------------------------------------------------
 -- 🏍️ SPEED FARM (120+ km/h)

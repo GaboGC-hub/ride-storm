@@ -139,7 +139,7 @@ DeliveryTab:CreateToggle({
 -- ⚡ SPEED FARM (AFK / FREEZE)
 -- =============================
 DeliveryTab:CreateToggle({
-    Name = "⚡ Speed Farm (300 studs/s)",
+    Name = "⚡ Speed Farm (320 studs/s)",
     CurrentValue = false,
     Callback = function(v)
         getgenv().RideStorm.SpeedFarm = v
@@ -150,20 +150,6 @@ DeliveryTab:CreateToggle({
         end
     end
 })
-
-DeliveryTab:CreateToggle({
-    Name = "🏍️📦 Moto + Cajas Farm",
-    CurrentValue = false,
-    Callback = function(v)
-        getgenv().RideStorm.MotoBoxFarm = v
-        if v then
-            loadstring(game:HttpGet(
-                "https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/moto_box_farm.lua"
-            ))()
-        end
-    end
-})
-
 
 -- =============================
 -- 🛡️ ANTI-AFK

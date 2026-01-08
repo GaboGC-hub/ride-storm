@@ -1,10 +1,11 @@
 local RunService = game:GetService("RunService")
-local player = game.Players.LocalPlayer
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
 
-local SPEED = 40 -- studs/s ≈ 120–130 km/h
-local DIST = 200
-local dir = 1
-local vel, startPos
+local TARGET_SPEED = 140 -- studs/s ≈ 100–120 km/h reales
+local FORCE = 6000
+
+local lv
 
 local function getVehicle()
     local char = player.Character
@@ -15,43 +16,45 @@ local function getVehicle()
     end
 end
 
-local function start()
+local function startSpeedFarm()
     local veh = getVehicle()
     if not veh then return end
 
     local root = veh.PrimaryPart or veh:FindFirstChildWhichIsA("BasePart")
     if not root then return end
 
-    root.AssemblyLinearVelocity = Vector3.zero
+    if lv then lv:Destroy() end
 
-    vel = Instance.new("BodyVelocity")
-    vel.MaxForce = Vector3.new(1e7,1e7,1e7)
-    vel.Velocity = root.CFrame.LookVector * SPEED
-    vel.Parent = root
+    lv = Instance.new("LinearVelocity")
+    lv.Attachment0 = root:FindFirstChildOfClass("Attachment") 
+        or Instance.new("Attachment", root)
 
-    startPos = root.Position
+    lv.MaxForce = FORCE
+    lv.VectorVelocity = root.CFrame.LookVector * TARGET_SPEED
+    lv.RelativeTo = Enum.ActuatorRelativeTo.World
+    lv.Parent = root
 end
 
-local function stop()
-    if vel then vel:Destroy() vel = nil end
+local function stopSpeedFarm()
+    if lv then
+        lv:Destroy()
+        lv = nil
+    end
 end
 
 RunService.Heartbeat:Connect(function()
     if not getgenv().RideStorm.SpeedFarm then
-        stop()
+        stopSpeedFarm()
         return
     end
 
     local veh = getVehicle()
-    if not veh or not vel then return end
+    if not veh then return end
     local root = veh.PrimaryPart or veh:FindFirstChildWhichIsA("BasePart")
-    if not root then return end
+    if not root or not lv then return end
 
-    if (root.Position - startPos).Magnitude > DIST then
-        dir *= -1
-        startPos = root.Position
-        vel.Velocity = root.CFrame.LookVector * SPEED * dir
-    end
+    -- mantener dirección sin volar
+    lv.VectorVelocity = root.CFrame.LookVector * TARGET_SPEED
 end)
 
-task.delay(0.3, start)
+task.delay(0.3, startSpeedFarm)

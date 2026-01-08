@@ -1,202 +1,208 @@
---=====================================
--- RideStorm Hub 🏍️ (ESTABLE)
---=====================================
+-- ==========================================
+-- 🏍️ RideStorm Hub | Speed Farm + UI
+-- ==========================================
 
--- 🔒 MULTI PLACE ID
-local SupportedPlaces = {
-    [game.PlaceId] = true
-}
-if not SupportedPlaces[game.PlaceId] then
-    warn("RideStorm: PlaceId no soportado")
-    return
-end
-
--- 📦 SERVICIOS
+-- =========================
+-- SERVICES
+-- =========================
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local VirtualUser = game:GetService("VirtualUser")
-local player = Players.LocalPlayer
 
--- 🌐 RAYFIELD (OFICIAL)
+local player = Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+
+-- =========================
+-- LOAD RAYFIELD (OFICIAL)
+-- =========================
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
--- 🧠 ESTADO GLOBAL
-getgenv().RideStorm = {
-    AutoDelivery = false,
-    SpeedFarm = false,
-    MoneyStart = 0,
-    MoneyEarned = 0,
-    SelectedTeleport = nil
-}
-
--- 💰 PATH REAL DEL DINERO (AJUSTA SI CAMBIA)
-local function getMoney()
-    local stats = player:FindFirstChild("leaderstats")
-    if stats then
-        local cash = stats:FindFirstChild("Money") or stats:FindFirstChild("Cash")
-        if cash then
-            return cash.Value
-        end
-    end
-    return 0
-end
-
---=====================================
--- 🪟 WINDOW
---=====================================
+-- =========================
+-- WINDOW
+-- =========================
 local Window = Rayfield:CreateWindow({
     Name = "RideStorm 🏍️",
     LoadingTitle = "RideStorm",
-    LoadingSubtitle = "By GaboGC",
+    LoadingSubtitle = "Speed System",
     ConfigurationSaving = { Enabled = false }
 })
 
+-- =========================
+-- TABS
+-- =========================
 local DeliveryTab = Window:CreateTab("🚚 Delivery")
 local TeleportTab = Window:CreateTab("📍 Teleports")
-local PlayerTab   = Window:CreateTab("🧍 Player")
+local PlayerTab   = Window:CreateTab("👤 Player")
 local MiscTab     = Window:CreateTab("🎲 Misc")
 
---=====================================
--- 🚚 DELIVERY
---=====================================
-DeliveryTab:CreateSection("Auto Delivery")
+-- =========================
+-- GLOBAL STATE
+-- =========================
+getgenv().RideStorm = {
+    Enabled = false,
+    Noclip = false,
+    AntiAFK = true,
+    StartMoney = nil
+}
+local RS = getgenv().RideStorm
 
-DeliveryTab:CreateToggle({
-    Name = "🚚 Auto Delivery Farm",
-    CurrentValue = false,
-    Callback = function(state)
-        getgenv().RideStorm.AutoDelivery = state
+-- =========================
+-- MONEY (REAL)
+-- =========================
+local function getMoney()
+    local ls = player:FindFirstChild("leaderstats")
+    if not ls then return end
+    return ls:FindFirstChild("Cash") or ls:FindFirstChild("Money")
+end
 
-        if state then
-            -- TP previo a Truckers Bay (streaming fix)
-            local map = workspace:FindFirstChild("JOB1")
-            if map then
-                local part = map:FindFirstChildWhichIsA("BasePart", true)
-                if part then
-                    player.Character:WaitForChild("HumanoidRootPart").CFrame =
-                        part.CFrame + Vector3.new(0,5,0)
-                end
-            end
+-- =========================
+-- BIKE ROOT
+-- =========================
+local function getBikeRoot()
+    char = player.Character
+    if not char then return end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if hum and hum.SeatPart then
+        local bike = hum.SeatPart.Parent
+        return bike.PrimaryPart or bike:FindFirstChildWhichIsA("BasePart")
+    end
+end
 
-            loadstring(game:HttpGet(
-                "https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/autofarm.lua"
-            ))()
+-- =========================
+-- SPEED FARM CONFIG
+-- =========================
+-- En ESTE juego:
+-- 50 studs ≈ 45 km/h
+-- Objetivo ≈ 100–120 km/h
+
+local TARGET_STUDS = 115
+local ACCEL = 1.2
+local MAX_DIST = 220
+
+local origin
+local dir = 1
+local speed = 0
+local mover
+
+-- =========================
+-- START / STOP FARM
+-- =========================
+local function startFarm()
+    local root = getBikeRoot()
+    if not root then
+        Rayfield:Notify({
+            Title = "RideStorm",
+            Content = "Móntate en una moto primero",
+            Duration = 3
+        })
+        return
+    end
+
+    origin = root.Position
+    speed = 0
+
+    mover = Instance.new("LinearVelocity")
+    mover.MaxForce = math.huge
+    mover.RelativeTo = Enum.ActuatorRelativeTo.World
+    mover.Attachment0 = Instance.new("Attachment", root)
+    mover.Parent = root
+
+    local money = getMoney()
+    if money then
+        RS.StartMoney = money.Value
+    end
+end
+
+local function stopFarm()
+    if mover then
+        mover:Destroy()
+        mover = nil
+    end
+end
+
+-- =========================
+-- HEARTBEAT LOOP
+-- =========================
+RunService.Heartbeat:Connect(function()
+    if RS.Enabled then
+        if not mover then
+            startFarm()
+            return
         end
+
+        local root = getBikeRoot()
+        if not root then return end
+
+        speed = math.min(TARGET_STUDS, speed + ACCEL)
+        mover.VectorVelocity = root.CFrame.LookVector * speed * dir
+
+        if (root.Position - origin).Magnitude > MAX_DIST then
+            dir *= -1
+            origin = root.Position
+        end
+    else
+        stopFarm()
+    end
+
+    -- NOCLIP TOTAL
+    if RS.Noclip and char then
+        for _, v in pairs(char:GetDescendants()) do
+            if v:IsA("BasePart") then
+                v.CanCollide = false
+            end
+        end
+    end
+end)
+
+-- =========================
+-- ANTI AFK
+-- =========================
+player.Idled:Connect(function()
+    if RS.AntiAFK then
+        VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+        task.wait(1)
+        VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+    end
+end)
+
+-- =========================
+-- UI – DELIVERY
+-- =========================
+DeliveryTab:CreateToggle({
+    Name = "Auto Speed Farm",
+    CurrentValue = false,
+    Callback = function(v)
+        RS.Enabled = v
     end
 })
 
 local moneyLabel = DeliveryTab:CreateLabel("💰 Dinero ganado: $0")
 
 DeliveryTab:CreateButton({
-    Name = "🔄 Reiniciar contador",
+    Name = "Reiniciar contador",
     Callback = function()
-        getgenv().RideStorm.MoneyStart = getMoney()
-        getgenv().RideStorm.MoneyEarned = 0
-        moneyLabel:Set("💰 Dinero ganado: $0")
+        local money = getMoney()
+        if money then
+            RS.StartMoney = money.Value
+            moneyLabel:Set("💰 Dinero ganado: $0")
+        end
     end
 })
 
-
--- 💰 CONTADOR REAL
+-- Update money label
 task.spawn(function()
-    getgenv().RideStorm.MoneyStart = getMoney()
-    while true do
-        task.wait(0.5)
-        local current = getMoney()
-        local earned = current - getgenv().RideStorm.MoneyStart
-        if earned >= 0 then
-            getgenv().RideStorm.MoneyEarned = earned
-            moneyLabel:Set("💰 Dinero ganado: $" .. earned)
+    while task.wait(1) do
+        local money = getMoney()
+        if RS.StartMoney and money then
+            local gained = money.Value - RS.StartMoney
+            moneyLabel:Set("💰 Dinero ganado: $" .. gained)
         end
     end
 end)
 
---=====================================
--- 🏍️ SPEED FARM (DINERO REAL OPTIMIZADO)
---=====================================
-
-local SPEED_STUDS = 50 -- ≈ 180 km/h
-local MAX_DIST = 140
-local direction = 1
-local bv
-local originPos
-
-local function getVehicleRoot()
-    local char = player.Character
-    if not char then return end
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if hum and hum.SeatPart then
-        local veh = hum.SeatPart.Parent
-        return veh.PrimaryPart or veh:FindFirstChildWhichIsA("BasePart")
-    end
-end
-
-local function startSpeedFarm()
-    local root = getVehicleRoot()
-    if not root then
-        Rayfield:Notify({
-            Title = "RideStorm",
-            Content = "Debes estar montado en una moto",
-            Duration = 3
-        })
-        getgenv().RideStorm.SpeedFarm = false
-        return
-    end
-
-    originPos = root.Position
-
-    bv = Instance.new("BodyVelocity")
-    bv.MaxForce = Vector3.new(1e6, 0, 1e6)
-    bv.Velocity = root.CFrame.LookVector * SPEED_STUDS
-    bv.Parent = root
-end
-
-local function stopSpeedFarm()
-    if bv then
-        bv:Destroy()
-        bv = nil
-    end
-end
-
-RunService.Heartbeat:Connect(function()
-    if not getgenv().RideStorm.SpeedFarm then
-        stopSpeedFarm()
-        return
-    end
-
-    local root = getVehicleRoot()
-    if not root or not bv then return end
-
-    -- Mantener velocidad ALTA siempre
-    bv.Velocity = root.CFrame.LookVector * SPEED_STUDS * direction
-
-    -- Vaivén corto (anti límites / streaming)
-    if (root.Position - originPos).Magnitude >= MAX_DIST then
-        direction *= -1
-        originPos = root.Position
-    end
-end)
-
-DeliveryTab:CreateToggle({
-    Name = "🏍️ Speed Farm (dinero real)",
-    CurrentValue = false,
-    Callback = function(v)
-        getgenv().RideStorm.SpeedFarm = v
-        if v then
-            task.wait(0.2)
-            startSpeedFarm()
-        else
-            stopSpeedFarm()
-        end
-    end
-})
-
-
---=====================================
--- 📍 TELEPORTS
---=====================================
-TeleportTab:CreateSection("Mapas")
-
+-- =========================
+-- TELEPORTS
+-- =========================
 local Teleports = {
     {"Irish Islands","mapa2"},
     {"Alp Mountains","mapa3"},
@@ -215,94 +221,76 @@ local Teleports = {
 }
 
 local names = {}
-for _,v in ipairs(Teleports) do table.insert(names,v[1]) end
+for _, v in ipairs(Teleports) do table.insert(names, v[1]) end
+local selectedMap = Teleports[1]
 
 TeleportTab:CreateDropdown({
-    Name = "Seleccionar mapa",
+    Name = "Mapa",
     Options = names,
     CurrentOption = {names[1]},
     Callback = function(opt)
-        getgenv().RideStorm.SelectedTeleport = opt[1]
-    end
-})
-
-TeleportTab:CreateButton({
-    Name = "📍 Teletransportar",
-    Callback = function()
-        local sel = getgenv().RideStorm.SelectedTeleport
-        if not sel then return end
-
-        for _,v in ipairs(Teleports) do
-            if v[1]==sel then
-                local map = workspace:FindFirstChild(v[2])
-                if not map then
-                    Rayfield:Notify({
-                        Title="RideStorm",
-                        Content="Mapa no cargado (streaming)",
-                        Duration=3
-                    })
-                    return
-                end
-                local part = map:FindFirstChildWhichIsA("BasePart",true)
-                if part then
-                    player.Character:WaitForChild("HumanoidRootPart").CFrame =
-                        part.CFrame + Vector3.new(0,5,0)
-                end
+        for _, v in ipairs(Teleports) do
+            if v[1] == opt[1] then
+                selectedMap = v
+                break
             end
         end
     end
 })
 
---=====================================
--- 🧍 PLAYER
---=====================================
-PlayerTab:CreateSection("Utilidades")
+TeleportTab:CreateButton({
+    Name = "Teletransportar",
+    Callback = function()
+        local map = workspace:FindFirstChild(selectedMap[2])
+        if not map then
+            Rayfield:Notify({
+                Title = "RideStorm",
+                Content = "Mapa no cargado (streaming)",
+                Duration = 3
+            })
+            return
+        end
 
--- NOCLIP (sin colisión con jugadores)
-PlayerTab:CreateToggle({
-    Name="Noclip",
-    CurrentValue=false,
-    Callback=function(v)
-        RunService.Stepped:Connect(function()
-            if not v then return end
-            local char = player.Character
-            if char then
-                for _,p in ipairs(char:GetChildren()) do
-                    if p:IsA("BasePart") then
-                        p.CanCollide = false
-                    end
-                end
-            end
-        end)
+        local root = char:WaitForChild("HumanoidRootPart")
+        local part = map:FindFirstChildWhichIsA("BasePart", true)
+        if part then
+            root.CFrame = part.CFrame + Vector3.new(0,5,0)
+        end
     end
 })
 
--- ANTI AFK
+-- =========================
+-- PLAYER TAB
+-- =========================
 PlayerTab:CreateToggle({
-    Name="Anti AFK",
-    CurrentValue=false,
-    Callback=function(v)
-        if not v then return end
-        player.Idled:Connect(function()
-            VirtualUser:Button2Down(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
-            task.wait(1)
-            VirtualUser:Button2Up(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
-        end)
+    Name = "Noclip (incluye jugadores)",
+    CurrentValue = false,
+    Callback = function(v)
+        RS.Noclip = v
     end
 })
 
---=====================================
--- 🎲 MISC
---=====================================
+PlayerTab:CreateToggle({
+    Name = "Anti AFK",
+    CurrentValue = true,
+    Callback = function(v)
+        RS.AntiAFK = v
+    end
+})
+
+-- =========================
+-- MISC
+-- =========================
 MiscTab:CreateButton({
-    Name="Cerrar Hub",
-    Callback=function()
-        Rayfield:Destroy()
+    Name = "Desactivar todo",
+    Callback = function()
+        RS.Enabled = false
+        RS.Noclip = false
     end
 })
 
 Rayfield:Notify({
-    Title="RideStorm",
-    Content="Hub cargado correctamente",
-    Duration=4
+    Title = "RideStorm",
+    Content = "Hub cargado correctamente",
+    Duration = 4
 })

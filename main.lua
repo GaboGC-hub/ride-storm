@@ -41,16 +41,16 @@ getgenv().RideStorm = {
 }
 
 -- =============================
--- 💰 MONEY TRACKER (REAL)
+-- 💰 MONEY TRACKER (REAL, ESTABLE)
 -- =============================
 local moneyLabel = DeliveryTab:CreateLabel("💰 Dinero ganado: $0")
-local baseMoney = nil
+local baseMoney
 
-local function hookMoney()
+task.spawn(function()
     local stats = player:WaitForChild("leaderstats", 10)
     if not stats then return end
 
-    local money = stats:FindFirstChild("Money")
+    local money = stats:WaitForChild("Money", 10)
     if not money then return end
 
     baseMoney = money.Value
@@ -61,9 +61,7 @@ local function hookMoney()
         if gained < 0 then gained = 0 end
         moneyLabel:Set("💰 Dinero ganado: $" .. gained)
     end)
-end
-
-task.spawn(hookMoney)
+end)
 
 -- =============================
 -- 📍 TELEPORT SYSTEM (RESTAURADO)

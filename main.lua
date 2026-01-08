@@ -20,6 +20,21 @@ DeliveryTab:CreateToggle({
     end
 })
 
+DeliveryTab:CreateToggle({
+    Name = "🏍️ Speed Farm (Moto)",
+    CurrentValue = false,
+    Callback = function(state)
+        getgenv().RideStorm.SpeedFarm = state
+
+        if state then
+            loadstring(game:HttpGet(
+                "https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/speedfarm.lua"
+            ))()
+        end
+    end
+})
+
+
 -- 📊 SECCIÓN: GANANCIAS
 DeliveryTab:CreateSection("💰 Ganancias de la sesión")
 

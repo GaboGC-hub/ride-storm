@@ -7,7 +7,7 @@ local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 
 local SPEED = 320 -- studs/s ≈ 160 km/h (sube si quieres)
-local MAX_DIST = 150
+local MAX_DIST = 600
 local dir = 1
 
 local velObj

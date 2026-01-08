@@ -73,48 +73,105 @@ DeliveryTab:CreateButton({
     end
 })
 
---====================================================
--- 🏍️ SPEED FARM (CORE – NO OPTIMIZAR)
---====================================================
-local SpeedFarmConnection
+--=====================================
+-- 🏍️ SPEED FARM (HIGH SPEED / AIR SAFE)
+--=====================================
+DeliveryTab:CreateSection("Speed Farm")
 
-local function startSpeedFarm()
-    if SpeedFarmConnection then return end
+local SPEED = 65        -- 🔥 studs/s (~230 km/h)
+local DIST  = 160
+local dir = 1
 
-    SpeedFarmConnection = RunService.Heartbeat:Connect(function()
-        if not getgenv().RideStorm.SpeedFarm then return end
+local velObj
+local gyro
+local startPos
 
-        local char = player.Character
-        if not char then return end
-
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        if not hrp then return end
-
-        -- 🔥 MOVIMIENTO REAL (esto es lo que da dinero)
-        local look = hrp.CFrame.LookVector
-        hrp.CFrame = hrp.CFrame + (look * 2.5) -- studs por frame
-    end)
-end
-
-local function stopSpeedFarm()
-    if SpeedFarmConnection then
-        SpeedFarmConnection:Disconnect()
-        SpeedFarmConnection = nil
+local function getVehicle()
+    local char = player.Character
+    if not char then return end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if hum and hum.SeatPart then
+        return hum.SeatPart.Parent
     end
 end
 
---====================================================
--- 🎚️ UI – AUTO DELIVERY ARRIBA
---====================================================
+local function prepareVehicle(veh)
+    for _, p in ipairs(veh:GetDescendants()) do
+        if p:IsA("BasePart") then
+            p.CustomPhysicalProperties = PhysicalProperties.new(
+                0.01, -- density
+                0,    -- friction
+                0,    -- elasticity
+                0,    -- friction weight
+                0     -- elasticity weight
+            )
+        end
+    end
+end
+
+local function startSpeedFarm()
+    local veh = getVehicle()
+    if not veh then return end
+
+    local root = veh.PrimaryPart or veh:FindFirstChildWhichIsA("BasePart")
+    if not root then return end
+
+    prepareVehicle(veh)
+    startPos = root.Position
+
+    -- 🔥 VELOCIDAD REAL
+    velObj = Instance.new("BodyVelocity")
+    velObj.MaxForce = Vector3.new(1e8, 1e8, 1e8) -- 🚀 aire incluido
+    velObj.Velocity = root.CFrame.LookVector * SPEED
+    velObj.P = 2e4
+    velObj.Parent = root
+
+    -- 🔒 ESTABILIZADOR (no rota)
+    gyro = Instance.new("BodyGyro")
+    gyro.MaxTorque = Vector3.new(1e7, 1e7, 1e7)
+    gyro.CFrame = root.CFrame
+    gyro.P = 1e4
+    gyro.Parent = root
+end
+
+local function stopSpeedFarm()
+    if velObj then velObj:Destroy() velObj = nil end
+    if gyro then gyro:Destroy() gyro = nil end
+end
+
+RunService.Heartbeat:Connect(function()
+    if not getgenv().RideStorm.SpeedFarm then
+        stopSpeedFarm()
+        return
+    end
+
+    local veh = getVehicle()
+    if not veh then return end
+
+    local root = veh.PrimaryPart or veh:FindFirstChildWhichIsA("BasePart")
+    if not root or not velObj then return end
+
+    if (root.Position - startPos).Magnitude >= DIST then
+        dir *= -1
+        startPos = root.Position
+        velObj.Velocity = root.CFrame.LookVector * SPEED * dir
+    end
+
+    -- mantiene dirección aunque esté en el aire
+    gyro.CFrame = CFrame.lookAt(
+        root.Position,
+        root.Position + velObj.Velocity
+    )
+end)
+
 DeliveryTab:CreateToggle({
-    Name = "🏍️ Auto Speed Farm",
+    Name = "🏍️ Speed Farm (FAST / AIR)",
     CurrentValue = false,
     Callback = function(v)
         getgenv().RideStorm.SpeedFarm = v
         if v then
+            task.wait(0.15)
             startSpeedFarm()
-        else
-            stopSpeedFarm()
         end
     end
 })

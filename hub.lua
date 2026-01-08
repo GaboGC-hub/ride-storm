@@ -112,40 +112,50 @@ task.spawn(function()
 end)
 
 --=====================================
--- 🏍️ SPEED FARM (70+ KM/H REAL)
+-- 🏍️ SPEED FARM (DINERO REAL OPTIMIZADO)
 --=====================================
-DeliveryTab:CreateSection("Speed Farm")
 
-local SPEED = 25 -- studs/s ≈ 90 km/h
-local DIST = 120
-local dir = 1
-local velObj
-local startPos
+local SPEED_STUDS = 50 -- ≈ 180 km/h
+local MAX_DIST = 140
+local direction = 1
+local bv
+local originPos
 
-local function getVehicle()
+local function getVehicleRoot()
     local char = player.Character
     if not char then return end
     local hum = char:FindFirstChildOfClass("Humanoid")
     if hum and hum.SeatPart then
-        return hum.SeatPart.Parent
+        local veh = hum.SeatPart.Parent
+        return veh.PrimaryPart or veh:FindFirstChildWhichIsA("BasePart")
     end
 end
 
 local function startSpeedFarm()
-    local veh = getVehicle()
-    if not veh then return end
-    local root = veh.PrimaryPart or veh:FindFirstChildWhichIsA("BasePart")
-    if not root then return end
+    local root = getVehicleRoot()
+    if not root then
+        Rayfield:Notify({
+            Title = "RideStorm",
+            Content = "Debes estar montado en una moto",
+            Duration = 3
+        })
+        getgenv().RideStorm.SpeedFarm = false
+        return
+    end
 
-    startPos = root.Position
-    velObj = Instance.new("BodyVelocity")
-    velObj.MaxForce = Vector3.new(1e6,0,1e6)
-    velObj.Velocity = root.CFrame.LookVector * SPEED
-    velObj.Parent = root
+    originPos = root.Position
+
+    bv = Instance.new("BodyVelocity")
+    bv.MaxForce = Vector3.new(1e6, 0, 1e6)
+    bv.Velocity = root.CFrame.LookVector * SPEED_STUDS
+    bv.Parent = root
 end
 
 local function stopSpeedFarm()
-    if velObj then velObj:Destroy() velObj = nil end
+    if bv then
+        bv:Destroy()
+        bv = nil
+    end
 end
 
 RunService.Heartbeat:Connect(function()
@@ -154,26 +164,33 @@ RunService.Heartbeat:Connect(function()
         return
     end
 
-    local veh = getVehicle()
-    if not veh then return end
-    local root = veh.PrimaryPart or veh:FindFirstChildWhichIsA("BasePart")
-    if not root or not velObj then return end
+    local root = getVehicleRoot()
+    if not root or not bv then return end
 
-    if (root.Position - startPos).Magnitude >= DIST then
-        dir *= -1
-        startPos = root.Position
-        velObj.Velocity = root.CFrame.LookVector * SPEED * dir
+    -- Mantener velocidad ALTA siempre
+    bv.Velocity = root.CFrame.LookVector * SPEED_STUDS * direction
+
+    -- Vaivén corto (anti límites / streaming)
+    if (root.Position - originPos).Magnitude >= MAX_DIST then
+        direction *= -1
+        originPos = root.Position
     end
 end)
 
 DeliveryTab:CreateToggle({
-    Name = "🏍️ Speed Farm (70+ km/h)",
+    Name = "🏍️ Speed Farm (dinero real)",
     CurrentValue = false,
     Callback = function(v)
         getgenv().RideStorm.SpeedFarm = v
-        if v then task.wait(0.2) startSpeedFarm() end
+        if v then
+            task.wait(0.2)
+            startSpeedFarm()
+        else
+            stopSpeedFarm()
+        end
     end
 })
+
 
 --=====================================
 -- 📍 TELEPORTS

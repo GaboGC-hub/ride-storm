@@ -1,12 +1,10 @@
-local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local player = Players.LocalPlayer
+local player = game.Players.LocalPlayer
 
-local SPEED_STUDS = 130 -- ≈ 115–120 km/h reales
+local SPEED = 40 -- studs/s ≈ 120–130 km/h
 local DIST = 200
 local dir = 1
-local startPos
-local lv
+local vel, startPos
 
 local function getVehicle()
     local char = player.Character
@@ -24,18 +22,18 @@ local function start()
     local root = veh.PrimaryPart or veh:FindFirstChildWhichIsA("BasePart")
     if not root then return end
 
-    startPos = root.Position
+    root.AssemblyLinearVelocity = Vector3.zero
 
-    lv = Instance.new("LinearVelocity")
-    lv.Attachment0 = root:FindFirstChildWhichIsA("Attachment") or Instance.new("Attachment", root)
-    lv.MaxForce = math.huge
-    lv.VectorVelocity = root.CFrame.LookVector * SPEED_STUDS
-    lv.RelativeTo = Enum.ActuatorRelativeTo.World
-    lv.Parent = root
+    vel = Instance.new("BodyVelocity")
+    vel.MaxForce = Vector3.new(1e7,1e7,1e7)
+    vel.Velocity = root.CFrame.LookVector * SPEED
+    vel.Parent = root
+
+    startPos = root.Position
 end
 
 local function stop()
-    if lv then lv:Destroy() lv = nil end
+    if vel then vel:Destroy() vel = nil end
 end
 
 RunService.Heartbeat:Connect(function()
@@ -45,16 +43,15 @@ RunService.Heartbeat:Connect(function()
     end
 
     local veh = getVehicle()
-    if not veh or not lv then return end
+    if not veh or not vel then return end
     local root = veh.PrimaryPart or veh:FindFirstChildWhichIsA("BasePart")
     if not root then return end
 
-    if (root.Position - startPos).Magnitude >= DIST then
+    if (root.Position - startPos).Magnitude > DIST then
         dir *= -1
         startPos = root.Position
-        lv.VectorVelocity = root.CFrame.LookVector * SPEED_STUDS * dir
+        vel.Velocity = root.CFrame.LookVector * SPEED * dir
     end
 end)
 
-task.wait(0.2)
-start()
+task.delay(0.3, start)

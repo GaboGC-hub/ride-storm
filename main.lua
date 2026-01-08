@@ -1,11 +1,8 @@
--- RideStorm HUB (ESTABLE)
+-- RideStorm Hub (ESTABLE + MEJORADO)
 
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 
--- =============================
--- RAYFIELD (OFICIAL)
--- =============================
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
 local Window = Rayfield:CreateWindow({
@@ -15,11 +12,9 @@ local Window = Rayfield:CreateWindow({
     ConfigurationSaving = { Enabled = false }
 })
 
--- =============================
--- TABS
--- =============================
-local DeliveryTab = Window:CreateTab("🚚 Delivery", 4483362458)
-local MiscTab     = Window:CreateTab("⚙️ Misc", 4483362458)
+local DeliveryTab = Window:CreateTab("🚚 Delivery")
+local TeleportTab = Window:CreateTab("📍 Teleports")
+local MiscTab = Window:CreateTab("⚙️ Misc")
 
 -- =============================
 -- GLOBAL STATE
@@ -27,12 +22,13 @@ local MiscTab     = Window:CreateTab("⚙️ Misc", 4483362458)
 getgenv().RideStorm = {
     BoxFarm = false,
     SpeedFarm = false,
-    MoneyStart = nil
+    MoneyStart = 0,
+    MoneyCurrent = 0
 }
 
--- =============================
--- MONEY PATH REAL
--- =============================
+------------------------------------------------
+-- 💰 MONEY TRACKER (REAL)
+------------------------------------------------
 local function getMoney()
     local stats = player:FindFirstChild("leaderstats")
     if stats and stats:FindFirstChild("Money") then
@@ -41,34 +37,28 @@ local function getMoney()
     return 0
 end
 
--- =============================
--- DELIVERY SECTION
--- =============================
-local DeliverySection = DeliveryTab:CreateSection({
-    Name = "📦 Delivery Farm"
-})
+getgenv().RideStorm.MoneyStart = getMoney()
 
+DeliveryTab:CreateSection("📦 Delivery Systems")
 local moneyLabel = DeliveryTab:CreateLabel("💰 Dinero ganado: $0")
 
 task.spawn(function()
     while task.wait(0.5) do
-        if getgenv().RideStorm.MoneyStart then
-            local gained = getMoney() - getgenv().RideStorm.MoneyStart
-            moneyLabel:Set("💰 Dinero ganado: $" .. math.max(gained, 0))
-        end
+        local current = getMoney()
+        local gained = current - getgenv().RideStorm.MoneyStart
+        moneyLabel:Set("💰 Dinero ganado: $" .. math.max(gained, 0))
     end
 end)
 
--- =============================
--- AUTO DELIVERY (CAJAS)
--- =============================
+------------------------------------------------
+-- 📦 AUTOFARM CAJAS (NO TOCAR)
+------------------------------------------------
 DeliveryTab:CreateToggle({
     Name = "📦 Auto Delivery (Cajas)",
     CurrentValue = false,
     Callback = function(v)
         getgenv().RideStorm.BoxFarm = v
         if v then
-            getgenv().RideStorm.MoneyStart = getMoney()
             loadstring(game:HttpGet(
                 "https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/autofarm.lua"
             ))()
@@ -76,16 +66,15 @@ DeliveryTab:CreateToggle({
     end
 })
 
--- =============================
--- SPEED FARM
--- =============================
+------------------------------------------------
+-- 🏍️ SPEED FARM (120+ km/h)
+------------------------------------------------
 DeliveryTab:CreateToggle({
-    Name = "🏍️ Speed Farm (Moto)",
+    Name = "🏍️ Speed Farm (120+ km/h)",
     CurrentValue = false,
     Callback = function(v)
         getgenv().RideStorm.SpeedFarm = v
         if v then
-            getgenv().RideStorm.MoneyStart = getMoney()
             loadstring(game:HttpGet(
                 "https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/speedfarm.lua"
             ))()
@@ -93,20 +82,63 @@ DeliveryTab:CreateToggle({
     end
 })
 
--- =============================
--- MISC SECTION
--- =============================
-local MiscSection = MiscTab:CreateSection({
-    Name = "⚙️ Utilities"
-})
+------------------------------------------------
+-- 📍 TELEPORTS
+------------------------------------------------
+TeleportTab:CreateSection("🗺️ Maps")
 
-MiscTab:CreateButton({
-    Name = "♻️ Reset Contador",
-    Callback = function()
-        getgenv().RideStorm.MoneyStart = getMoney()
-        moneyLabel:Set("💰 Dinero ganado: $0")
+local Teleports = {
+    {"Irish Islands", "mapa2"},
+    {"Alp Mountains", "mapa3"},
+    {"Track / Drag Strip", "mapa4"},
+    {"Highway", "mapa5"},
+    {"Stello Pass", "mapa6"},
+    {"Spawn", "mapa7"},
+    {"Canyons / Route 66", "mapa8"},
+    {"Sunset Beach", "mapa9"},
+    {"The Pit", "mapa1"},
+    {"Enduro Course", "mapa10"},
+    {"The States", "mapa11"},
+    {"Isle of Man TT", "mapa12"},
+    {"Vintage Islands", "mapa13"},
+    {"Truckers Bay (JOB)", "JOB1"},
+}
+
+local function tpTo(name)
+    local char = player.Character or player.CharacterAdded:Wait()
+    local hrp = char:WaitForChild("HumanoidRootPart")
+
+    local map = workspace:FindFirstChild(name)
+    if not map then
+        Rayfield:Notify({
+            Title = "RideStorm",
+            Content = "Mapa no cargado (streaming)",
+            Duration = 3
+        })
+        return
     end
-})
+
+    local part = map:FindFirstChildWhichIsA("BasePart", true)
+    if part then
+        hrp.CFrame = part.CFrame + Vector3.new(0,6,0)
+    end
+end
+
+for _, v in ipairs(Teleports) do
+    TeleportTab:CreateButton({
+        Name = v[1],
+        Callback = function()
+            tpTo(v[2])
+        end
+    })
+end
+
+------------------------------------------------
+-- ⚙️ MISC (CARGA MODULO)
+------------------------------------------------
+loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/misc.lua"
+))()
 
 Rayfield:Notify({
     Title = "RideStorm",

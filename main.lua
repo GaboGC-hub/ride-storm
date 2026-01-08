@@ -1,9 +1,9 @@
--- RideStorm Hub (ESTABLE)
+-- RideStorm Hub (FINAL ESTABLE)
 
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 
--- Rayfield (OFICIAL)
+-- Rayfield oficial
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
 local Window = Rayfield:CreateWindow({
@@ -18,7 +18,7 @@ local DeliveryTab = Window:CreateTab("🚚 Delivery")
 local MiscTab = Window:CreateTab("⚙️ Misc")
 
 -- =============================
--- GLOBAL STATE (ÚNICO)
+-- GLOBAL STATE
 -- =============================
 getgenv().RideStorm = getgenv().RideStorm or {}
 local RS = getgenv().RideStorm
@@ -28,7 +28,7 @@ RS.SpeedFarm = false
 RS.MoneyStart = nil
 
 -- =============================
--- MONEY (REAL)
+-- MONEY REAL
 -- =============================
 local function getMoney()
     local stats = player:FindFirstChild("leaderstats")
@@ -39,42 +39,13 @@ local function getMoney()
 end
 
 -- =============================
--- 📦 DELIVERY SECTION
+-- 🚚 DELIVERY UI
 -- =============================
 DeliveryTab:CreateSection({
-    Name = "📦 Delivery Farm"
+    Name = "🚚 Delivery Farm"
 })
 
-local moneyLabel = DeliveryTab:CreateLabel("💰 Dinero ganado: $0")
-
--- contador REAL
-task.spawn(function()
-    while task.wait(0.5) do
-        if RS.MoneyStart then
-            local gained = getMoney() - RS.MoneyStart
-            moneyLabel:Set("💰 Dinero ganado: $" .. math.max(gained, 0))
-        end
-    end
-end)
-
--- =============================
--- LOAD FARMS ONCE
--- =============================
-pcall(function()
-    loadstring(game:HttpGet(
-        "https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/autofarm.lua"
-    ))()
-end)
-
-pcall(function()
-    loadstring(game:HttpGet(
-        "https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/speedfarm.lua"
-    ))()
-end)
-
--- =============================
--- TOGGLES
--- =============================
+-- Toggle PRINCIPAL (arriba)
 DeliveryTab:CreateToggle({
     Name = "📦 Auto Delivery (Cajas)",
     CurrentValue = false,
@@ -97,18 +68,12 @@ DeliveryTab:CreateToggle({
     end
 })
 
--- =============================
--- MISC
--- =============================
-MiscTab:CreateButton({
-    Name = "🔄 Reiniciar contador",
-    Callback = function()
-        RS.MoneyStart = getMoney()
-    end
+DeliveryTab:CreateSection({
+    Name = "💰 Ganancias"
 })
 
-Rayfield:Notify({
-    Title = "RideStorm",
-    Content = "Hub cargado correctamente",
-    Duration = 4
-})
+local moneyLabel = DeliveryTab:CreateLabel("💰 Dinero ganado: $0")
+
+task.spawn(function()
+    while task.wait(0.5) do
+        if RS.

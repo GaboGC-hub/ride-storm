@@ -1,105 +1,74 @@
 --=====================================
--- 🏍️ SPEED FARM (ARC TP – 320 STUDS)
+-- 🏍️ SPEED FARM REAL (VELOCIDAD CONTINUA)
 --=====================================
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 
--- CONFIG
-local SPEED_STUDS = 320           -- velocidad objetivo
-local STEP_TIME = 0.05            -- tiempo entre pasos
-local STEP_DIST = SPEED_STUDS * STEP_TIME
-local MAX_DIST = 140              -- largo del arco
-local direction = 1
+local SPEED = 90 -- studs/s ≈ 160 km/h (sube si quieres)
+local MAX_DIST = 150
+local dir = 1
 
+local velObj
 local startPos
-local running = false
 
--- =============================
--- VEHÍCULO REAL
--- =============================
 local function getVehicle()
     local char = player.Character
     if not char then return end
 
     local hum = char:FindFirstChildOfClass("Humanoid")
     if hum and hum.SeatPart then
-        return hum.SeatPart:FindFirstAncestorOfClass("Model")
+        return hum.SeatPart.Parent
     end
 end
 
--- =============================
--- TP VEHÍCULO ESTABLE
--- =============================
-local function teleportVehicle(cf)
-    local vehicle = getVehicle()
-    if not vehicle then return end
+local function startSpeedFarm()
+    local veh = getVehicle()
+    if not veh then return end
 
-    if not vehicle.PrimaryPart then
-        vehicle.PrimaryPart = vehicle:FindFirstChildWhichIsA("BasePart")
-    end
-    if not vehicle.PrimaryPart then return end
+    local root = veh.PrimaryPart or veh:FindFirstChildWhichIsA("BasePart")
+    if not root then return end
 
-    -- limpiar fuerzas
-    for _, p in ipairs(vehicle:GetDescendants()) do
-        if p:IsA("BasePart") then
-            p.AssemblyLinearVelocity = Vector3.zero
-            p.AssemblyAngularVelocity = Vector3.zero
-        end
-    end
+    startPos = root.Position
 
-    vehicle:SetPrimaryPartCFrame(cf)
+    velObj = Instance.new("BodyVelocity")
+    velObj.MaxForce = Vector3.new(1e6, 0, 1e6)
+    velObj.Velocity = root.CFrame.LookVector * SPEED
+    velObj.Parent = root
+
+    -- suspender en el aire (no suelo)
+    root.Anchored = false
 end
 
--- =============================
--- LOOP DE ARCOS
--- =============================
-local function startArcFarm()
-    if running then return end
-    running = true
-
-    task.spawn(function()
-        while getgenv().RideStorm.SpeedFarm do
-            local veh = getVehicle()
-            if not veh or not veh.PrimaryPart then
-                task.wait(0.2)
-                continue
-            end
-
-            local root = veh.PrimaryPart
-
-            if not startPos then
-                startPos = root.Position
-            end
-
-            local moveDir = root.CFrame.LookVector * direction
-            local nextPos = root.Position + (moveDir * STEP_DIST)
-
-            teleportVehicle(
-                CFrame.new(nextPos, nextPos + moveDir)
-            )
-
-            if (root.Position - startPos).Magnitude >= MAX_DIST then
-                direction *= -1
-                startPos = root.Position
-            end
-
-            task.wait(STEP_TIME)
-        end
-
-        running = false
-        startPos = nil
-    end)
+local function stopSpeedFarm()
+    if velObj then velObj:Destroy() velObj = nil end
 end
 
--- =============================
--- ACTIVADOR
--- =============================
+RunService.Heartbeat:Connect(function()
+    if not getgenv().RideStorm.SpeedFarm then
+        stopSpeedFarm()
+        return
+    end
+
+    local veh = getVehicle()
+    if not veh then return end
+
+    local root = veh.PrimaryPart or veh:FindFirstChildWhichIsA("BasePart")
+    if not root or not velObj then return end
+
+    if (root.Position - startPos).Magnitude >= MAX_DIST then
+        dir *= -1
+        startPos = root.Position
+        velObj.Velocity = root.CFrame.LookVector * SPEED * dir
+    end
+end)
+
+-- auto start
 task.spawn(function()
     while true do
-        if getgenv().RideStorm and getgenv().RideStorm.SpeedFarm then
-            startArcFarm()
+        if getgenv().RideStorm.SpeedFarm and not velObj then
+            startSpeedFarm()
         end
         task.wait(0.3)
     end

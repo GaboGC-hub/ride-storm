@@ -1,46 +1,44 @@
--- =====================================
--- 🏍️ SPEED FARM (300 STUDS/S REAL)
--- =====================================
+-- =============================
+-- 🏍️ SPEED FARM OPTIMIZADO (OSCILANTE)
+-- =============================
 
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
+local SPEED = 300          -- studs/s (no tocar si ya paga bien)
+local DISTANCE = 60        -- studs de ida y vuelta (corto = seguro)
 
-local player = Players.LocalPlayer
-local RS = getgenv().RideStorm
-if not RS then return end
-
--- CONFIG
-local SPEED = 300 -- studs/s (exacto, como pediste)
-
-local seat
-local root
-
-local function getVehicle()
-    local char = player.Character
-    if not char then return end
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if hum and hum.SeatPart then
-        seat = hum.SeatPart
-        root = seat.Parent.PrimaryPart or seat
-        return true
-    end
-end
+local startPos = nil
+local direction = 1
 
 RunService.Heartbeat:Connect(function()
-    if not RS.SpeedFarm then return end
-    if not getVehicle() then return end
+    if not getgenv().RideStorm.SpeedFarm then return end
+
+    local char = player.Character
+    if not char then return end
+
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum or not hum.SeatPart then return end
+
+    local root = hum.SeatPart.Parent.PrimaryPart or hum.SeatPart
     if not root then return end
 
-    -- Dirección fija hacia adelante
-    local dir = root.CFrame.LookVector
+    if not startPos then
+        startPos = root.Position
+    end
 
-    -- Velocidad SIN eje Y (no vuela)
+    -- dirección fija
+    local dir = root.CFrame.LookVector * direction
+
+    -- velocidad constante (lo que paga)
     root.AssemblyLinearVelocity = Vector3.new(
         dir.X * SPEED,
-        root.AssemblyLinearVelocity.Y,
+        0,
         dir.Z * SPEED
     )
 
-    -- Bloquea rotación extraña
     root.AssemblyAngularVelocity = Vector3.zero
+
+    -- invertir dirección si se aleja mucho
+    if (root.Position - startPos).Magnitude >= DISTANCE then
+        direction *= -1
+        startPos = root.Position
+    end
 end)

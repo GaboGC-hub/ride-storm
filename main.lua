@@ -4,7 +4,16 @@ local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 
 -- Rayfield oficial
-local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+local Rayfield
+local success, err = pcall(function()
+    Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+end)
+
+if not success or type(Rayfield) ~= "table" then
+    warn("RideStorm: Rayfield no pudo cargarse")
+    return
+end
+
 
 local Window = Rayfield:CreateWindow({
     Name = "RideStorm 🏍️",

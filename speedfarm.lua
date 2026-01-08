@@ -1,49 +1,106 @@
--- =============================
--- ⚡ SPEED FARM REAL (VEHÍCULO)
--- =============================
+--=====================================
+-- 🏍️ SPEED FARM (ARC TP – 320 STUDS)
+--=====================================
 
-local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
-local RS = getgenv().RideStorm
 
-local SPEED = 300 -- studs/s reales
-local lockCF = nil
-local velObj
+-- CONFIG
+local SPEED_STUDS = 320           -- velocidad objetivo
+local STEP_TIME = 0.05            -- tiempo entre pasos
+local STEP_DIST = SPEED_STUDS * STEP_TIME
+local MAX_DIST = 140              -- largo del arco
+local direction = 1
 
+local startPos
+local running = false
+
+-- =============================
+-- VEHÍCULO REAL
+-- =============================
 local function getVehicle()
     local char = player.Character
     if not char then return end
 
     local hum = char:FindFirstChildOfClass("Humanoid")
     if hum and hum.SeatPart then
-        return hum.SeatPart.Parent
+        return hum.SeatPart:FindFirstAncestorOfClass("Model")
     end
 end
 
-RunService.Heartbeat:Connect(function()
-    if not RS or not RS.SpeedFarm then
-        if velObj then velObj:Destroy() velObj = nil end
-        lockCF = nil
-        return
-    end
-
+-- =============================
+-- TP VEHÍCULO ESTABLE
+-- =============================
+local function teleportVehicle(cf)
     local vehicle = getVehicle()
     if not vehicle then return end
 
-    local root = vehicle.PrimaryPart or vehicle:FindFirstChildWhichIsA("BasePart")
-    if not root then return end
+    if not vehicle.PrimaryPart then
+        vehicle.PrimaryPart = vehicle:FindFirstChildWhichIsA("BasePart")
+    end
+    if not vehicle.PrimaryPart then return end
 
-    if not lockCF then
-        lockCF = root.CFrame
-
-        velObj = Instance.new("BodyVelocity")
-        velObj.MaxForce = Vector3.new(1e9, 0, 1e9)
-        velObj.Velocity = root.CFrame.LookVector * SPEED
-        velObj.Parent = root
+    -- limpiar fuerzas
+    for _, p in ipairs(vehicle:GetDescendants()) do
+        if p:IsA("BasePart") then
+            p.AssemblyLinearVelocity = Vector3.zero
+            p.AssemblyAngularVelocity = Vector3.zero
+        end
     end
 
-    -- 🔒 bloquea posición (no se cae / no vuela)
-    root.CFrame = lockCF
-    root.AssemblyAngularVelocity = Vector3.zero
+    vehicle:SetPrimaryPartCFrame(cf)
+end
+
+-- =============================
+-- LOOP DE ARCOS
+-- =============================
+local function startArcFarm()
+    if running then return end
+    running = true
+
+    task.spawn(function()
+        while getgenv().RideStorm.SpeedFarm do
+            local veh = getVehicle()
+            if not veh or not veh.PrimaryPart then
+                task.wait(0.2)
+                continue
+            end
+
+            local root = veh.PrimaryPart
+
+            if not startPos then
+                startPos = root.Position
+            end
+
+            local moveDir = root.CFrame.LookVector * direction
+            local nextPos = root.Position + (moveDir * STEP_DIST)
+
+            teleportVehicle(
+                CFrame.new(nextPos, nextPos + moveDir)
+            )
+
+            if (root.Position - startPos).Magnitude >= MAX_DIST then
+                direction *= -1
+                startPos = root.Position
+            end
+
+            task.wait(STEP_TIME)
+        end
+
+        running = false
+        startPos = nil
+    end)
+end
+
+-- =============================
+-- ACTIVADOR
+-- =============================
+task.spawn(function()
+    while true do
+        if getgenv().RideStorm and getgenv().RideStorm.SpeedFarm then
+            startArcFarm()
+        end
+        task.wait(0.3)
+    end
 end)

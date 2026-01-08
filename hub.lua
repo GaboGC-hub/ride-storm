@@ -61,17 +61,6 @@ local MiscTab     = Window:CreateTab("🎲 Misc")
 --=====================================
 DeliveryTab:CreateSection("Auto Delivery")
 
-local moneyLabel = DeliveryTab:CreateLabel("💰 Dinero ganado: $0")
-
-DeliveryTab:CreateButton({
-    Name = "🔄 Reiniciar contador",
-    Callback = function()
-        getgenv().RideStorm.MoneyStart = getMoney()
-        getgenv().RideStorm.MoneyEarned = 0
-        moneyLabel:Set("💰 Dinero ganado: $0")
-    end
-})
-
 DeliveryTab:CreateToggle({
     Name = "🚚 Auto Delivery Farm",
     CurrentValue = false,
@@ -95,6 +84,18 @@ DeliveryTab:CreateToggle({
         end
     end
 })
+
+local moneyLabel = DeliveryTab:CreateLabel("💰 Dinero ganado: $0")
+
+DeliveryTab:CreateButton({
+    Name = "🔄 Reiniciar contador",
+    Callback = function()
+        getgenv().RideStorm.MoneyStart = getMoney()
+        getgenv().RideStorm.MoneyEarned = 0
+        moneyLabel:Set("💰 Dinero ganado: $0")
+    end
+})
+
 
 -- 💰 CONTADOR REAL
 task.spawn(function()

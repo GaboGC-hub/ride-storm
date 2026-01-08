@@ -76,4 +76,64 @@ local moneyLabel = DeliveryTab:CreateLabel("💰 Dinero ganado: $0")
 
 task.spawn(function()
     while task.wait(0.5) do
-        if RS.
+        if RS.MoneyStart then
+            local gained = getMoney() - RS.MoneyStart
+            moneyLabel:Set("💰 Dinero ganado: $" .. math.max(gained, 0))
+        end
+    end
+end)
+
+DeliveryTab:CreateButton({
+    Name = "🔄 Reiniciar contador",
+    Callback = function()
+        RS.MoneyStart = getMoney()
+    end
+})
+
+-- =============================
+-- ⚙️ MISC (para que NO se desactive)
+-- =============================
+MiscTab:CreateSection({
+    Name = "⚙️ Utilidades"
+})
+
+MiscTab:CreateToggle({
+    Name = "🛑 Anti-AFK",
+    CurrentValue = false,
+    Callback = function(v)
+        RS.AntiAFK = v
+    end
+})
+
+-- Anti-AFK real
+task.spawn(function()
+    local vu = game:GetService("VirtualUser")
+    while task.wait(30) do
+        if RS.AntiAFK then
+            vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+            task.wait(1)
+            vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+        end
+    end
+end)
+
+-- =============================
+-- LOAD SCRIPTS ONCE
+-- =============================
+pcall(function()
+    loadstring(game:HttpGet(
+        "https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/autofarm.lua"
+    ))()
+end)
+
+pcall(function()
+    loadstring(game:HttpGet(
+        "https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/speedfarm.lua"
+    ))()
+end)
+
+Rayfield:Notify({
+    Title = "RideStorm",
+    Content = "Hub cargado correctamente",
+    Duration = 4
+})

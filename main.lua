@@ -115,6 +115,20 @@ DeliveryTab:CreateToggle({
     end
 })
 
+DeliveryTab:CreateToggle({
+    Name = "🏍️📦 Moto + Cajas Farm",
+    CurrentValue = false,
+    Callback = function(v)
+        getgenv().RideStorm.MotoBoxFarm = v
+        if v then
+            loadstring(game:HttpGet(
+                "https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/delivery/moto_box_farm.lua"
+            ))()
+        end
+    end
+})
+
+
 -- =============================
 -- 🛡️ ANTI-AFK
 -- =============================

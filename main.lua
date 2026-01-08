@@ -1,8 +1,36 @@
+-- =====================================
+-- RideStorm Hub (STABLE BOOT)
+-- =====================================
+
+-- 🔒 Evitar doble ejecución
+if getgenv().RideStormLoaded then return end
+getgenv().RideStormLoaded = true
+
+-- =====================================
+-- SERVICIOS
+-- =====================================
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 
-local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+-- =====================================
+-- CARGAR RAYFIELD (FORMA OFICIAL)
+-- =====================================
+local Rayfield
+do
+    local ok, lib = pcall(function()
+        return loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+    end)
+    if not ok or not lib then
+        warn("❌ RideStorm: Rayfield no cargó")
+        return
+    end
+    Rayfield = lib
+end
 
+-- =====================================
+-- WINDOW
+-- =====================================
 local Window = Rayfield:CreateWindow({
     Name = "RideStorm 🏍️",
     LoadingTitle = "RideStorm",
@@ -10,21 +38,24 @@ local Window = Rayfield:CreateWindow({
     ConfigurationSaving = { Enabled = false }
 })
 
+-- =====================================
+-- TABS
+-- =====================================
 local DeliveryTab = Window:CreateTab("🚚 Delivery")
-local MiscTab = Window:CreateTab("⚙️ Misc")
+local MiscTab     = Window:CreateTab("⚙️ Misc")
 
--- =============================
+-- =====================================
 -- GLOBAL STATE
--- =============================
+-- =====================================
 getgenv().RideStorm = {
     BoxFarm = false,
     SpeedFarm = false,
     MoneyStart = 0
 }
 
--- =============================
--- MONEY PATH (REAL)
--- =============================
+-- =====================================
+-- MONEY (REAL)
+-- =====================================
 local function getMoney()
     local stats = player:FindFirstChild("leaderstats")
     if stats and stats:FindFirstChild("Money") then
@@ -33,14 +64,13 @@ local function getMoney()
     return 0
 end
 
--- =============================
--- 🚚 DELIVERY SECTION
--- =============================
-local deliverySection = DeliveryTab:CreateSection("📦 Delivery Farm")
+-- =====================================
+-- UI: DELIVERY
+-- =====================================
+DeliveryTab:CreateSection("📦 Delivery Farm")
 
 local moneyLabel = DeliveryTab:CreateLabel("💰 Dinero ganado: $0")
 
--- actualizar dinero REAL
 task.spawn(function()
     while task.wait(0.5) do
         if getgenv().RideStorm.MoneyStart > 0 then
@@ -50,7 +80,9 @@ task.spawn(function()
     end
 end)
 
--- AUTOFARM CAJAS (RESTAURADO)
+-- =====================================
+-- AUTOFARM CAJAS
+-- =====================================
 DeliveryTab:CreateToggle({
     Name = "📦 Auto Delivery (Cajas)",
     CurrentValue = false,
@@ -65,9 +97,9 @@ DeliveryTab:CreateToggle({
     end
 })
 
--- =============================
--- 🏍️ SPEED FARM
--- =============================
+-- =====================================
+-- SPEED FARM
+-- =====================================
 DeliveryTab:CreateToggle({
     Name = "🏍️ Speed Farm (Moto)",
     CurrentValue = false,
@@ -80,4 +112,20 @@ DeliveryTab:CreateToggle({
             ))()
         end
     end
+})
+
+-- =====================================
+-- MISC
+-- =====================================
+MiscTab:CreateButton({
+    Name = "🔁 Reset contador",
+    Callback = function()
+        getgenv().RideStorm.MoneyStart = getMoney()
+    end
+})
+
+Rayfield:Notify({
+    Title = "RideStorm",
+    Content = "Hub cargado correctamente",
+    Duration = 4
 })

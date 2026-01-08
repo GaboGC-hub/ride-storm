@@ -1,5 +1,5 @@
 -- =============================
--- RideStorm Hub 🏍️ (ESTABLE + SPEEDFARM)
+-- RideStorm Hub 🏍️ FINAL ESTABLE
 -- =============================
 
 -- Servicios
@@ -8,14 +8,10 @@ local RunService = game:GetService("RunService")
 local VirtualUser = game:GetService("VirtualUser")
 local player = Players.LocalPlayer
 
--- =============================
--- RAYFIELD (OFICIAL)
--- =============================
+-- Rayfield oficial
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
--- =============================
--- VENTANA
--- =============================
+-- Ventana
 local Window = Rayfield:CreateWindow({
     Name = "RideStorm 🏍️",
     LoadingTitle = "RideStorm",
@@ -23,65 +19,38 @@ local Window = Rayfield:CreateWindow({
     ConfigurationSaving = { Enabled = false }
 })
 
--- =============================
--- TABS
--- =============================
+-- Tabs
 local DeliveryTab = Window:CreateTab("🚚 Delivery")
 local TeleportTab = Window:CreateTab("📍 Teleports")
 local PlayerTab   = Window:CreateTab("👤 Player")
-local MiscTab     = Window:CreateTab("⚙️ Misc")
+local MiscTab     = Window:CreateTab("🎲 Misc")
+
+-- Secciones
+DeliveryTab:CreateSection("Auto Delivery")
+DeliveryTab:CreateSection("Ganancias")
+TeleportTab:CreateSection("Mapas")
+PlayerTab:CreateSection("Movimiento")
+MiscTab:CreateSection("Utilidades")
 
 -- =============================
--- SECTIONS
+-- 🌐 GLOBAL STATE
 -- =============================
-DeliveryTab:CreateSection("🚚 Auto Delivery")
-DeliveryTab:CreateSection("🏍️ Speed Farm")
-DeliveryTab:CreateSection("💰 Ganancias")
-
-TeleportTab:CreateSection("🗺️ Mapas")
-PlayerTab:CreateSection("🧍 Movimiento")
-MiscTab:CreateSection("🛠️ Utilidades")
+getgenv().RideStorm = {
+    Farming = false,
+    SpeedFarm = false
+}
 
 -- =============================
--- 🌍 TELEPORT BASE
--- =============================
-local function teleportTo(workspaceName)
-    local char = player.Character or player.CharacterAdded:Wait()
-    local hrp = char:WaitForChild("HumanoidRootPart")
-
-    local map = workspace:FindFirstChild(workspaceName)
-    if not map then
-        Rayfield:Notify({
-            Title = "RideStorm",
-            Content = "Mapa no cargado (Streaming)",
-            Duration = 3
-        })
-        return false
-    end
-
-    local part = map:FindFirstChildWhichIsA("BasePart", true)
-    if part then
-        hrp.CFrame = part.CFrame + Vector3.new(0, 6, 0)
-        return true
-    end
-    return false
-end
-
--- =============================
--- 💰 CONTADOR DE DINERO REAL
+-- 💰 MONEY TRACKER (REAL)
 -- =============================
 local moneyLabel = DeliveryTab:CreateLabel("💰 Dinero ganado: $0")
-local baseMoney = 0
+local baseMoney = nil
 
 local function hookMoney()
     local stats = player:WaitForChild("leaderstats", 10)
     if not stats then return end
 
-    local money =
-        stats:FindFirstChild("Money")
-        or stats:FindFirstChild("Cash")
-        or stats:FindFirstChild("Coins")
-
+    local money = stats:FindFirstChild("Money")
     if not money then return end
 
     baseMoney = money.Value
@@ -97,19 +66,31 @@ end
 task.spawn(hookMoney)
 
 -- =============================
+-- 📍 TELEPORT
+-- =============================
+local function teleportTo(workspaceName)
+    local char = player.Character or player.CharacterAdded:Wait()
+    local hrp = char:WaitForChild("HumanoidRootPart")
+
+    local map = workspace:FindFirstChild(workspaceName)
+    if not map then return end
+
+    local part = map:FindFirstChildWhichIsA("BasePart", true)
+    if part then
+        hrp.CFrame = part.CFrame + Vector3.new(0, 6, 0)
+    end
+end
+
+-- =============================
 -- 🚚 AUTO DELIVERY (CAJAS)
 -- =============================
-getgenv().RideStorm = getgenv().RideStorm or {}
-getgenv().RideStorm.Farming = false
-getgenv().RideStorm.SpeedFarm = false
-
 DeliveryTab:CreateToggle({
     Name = "📦 Auto Delivery (Cajas)",
     CurrentValue = false,
-    Callback = function(state)
-        getgenv().RideStorm.Farming = state
-        if state then
-            teleportTo("JOB1") -- 🔥 FIX IMPORTANTE
+    Callback = function(v)
+        getgenv().RideStorm.Farming = v
+        if v then
+            teleportTo("JOB1") -- fuerza carga del mapa
             task.wait(1.5)
             loadstring(game:HttpGet(
                 "https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/autofarm.lua"
@@ -119,86 +100,58 @@ DeliveryTab:CreateToggle({
 })
 
 -- =============================
--- 🏍️ SPEED FARM (300 STUDS/S)
+-- ⚡ SPEED FARM (AFK / FREEZE)
 -- =============================
-local SPEED = 300
-
-RunService.Heartbeat:Connect(function()
-    if not getgenv().RideStorm.SpeedFarm then return end
-
-    local char = player.Character
-    if not char then return end
-
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if not hum or not hum.SeatPart then return end
-
-    local root = hum.SeatPart.Parent.PrimaryPart or hum.SeatPart
-    if not root then return end
-
-    local dir = root.CFrame.LookVector
-
-    root.AssemblyLinearVelocity = Vector3.new(
-        dir.X * SPEED,
-        root.AssemblyLinearVelocity.Y,
-        dir.Z * SPEED
-    )
-
-    root.AssemblyAngularVelocity = Vector3.zero
-end)
-
 DeliveryTab:CreateToggle({
-    Name = "🏍️ Speed Farm (300 studs/s)",
+    Name = "⚡ Speed Farm (300 studs/s)",
     CurrentValue = false,
-    Callback = function(state)
-        getgenv().RideStorm.SpeedFarm = state
+    Callback = function(v)
+        getgenv().RideStorm.SpeedFarm = v
+        if v then
+            loadstring(game:HttpGet(
+                "https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/speedfarm.lua"
+            ))()
+        end
     end
 })
 
 -- =============================
--- 📍 TELEPORTS
--- =============================
-local Teleports = {
-    {"Irish Islands", "mapa2"},
-    {"Alp Mountains", "mapa3"},
-    {"Track / Drag Strip", "mapa4"},
-    {"Highway", "mapa5"},
-    {"Stello Pass", "mapa6"},
-    {"Spawn", "mapa7"},
-    {"Canyons / Route 66", "mapa8"},
-    {"Sunset Beach", "mapa9"},
-    {"The Pit", "mapa1"},
-    {"Enduro Course", "mapa10"},
-    {"The States", "mapa11"},
-    {"Isle of Man TT", "mapa12"},
-    {"Vintage Islands", "mapa13"},
-    {"Truckers Bay (JOB)", "JOB1"}
-}
-
-for _, v in ipairs(Teleports) do
-    TeleportTab:CreateButton({
-        Name = v[1],
-        Callback = function()
-            teleportTo(v[2])
-        end
-    })
-end
-
--- =============================
 -- 🛡️ ANTI-AFK
 -- =============================
-local antiAfkConn
 MiscTab:CreateToggle({
-    Name = "🛑 Anti-AFK",
-    CurrentValue = false,
-    Callback = function(state)
-        if state then
-            antiAfkConn = player.Idled:Connect(function()
+    Name = "Anti-AFK",
+    CurrentValue = true,
+    Callback = function(v)
+        if v then
+            player.Idled:Connect(function()
                 VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
                 task.wait(1)
                 VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
             end)
+        end
+    end
+})
+
+-- =============================
+-- 🚶 NOCLIP (PERFECTO)
+-- =============================
+local noclipConn
+PlayerTab:CreateToggle({
+    Name = "Noclip",
+    CurrentValue = false,
+    Callback = function(v)
+        if v then
+            noclipConn = RunService.Heartbeat:Connect(function()
+                local char = player.Character
+                if not char then return end
+                for _, p in pairs(char:GetDescendants()) do
+                    if p:IsA("BasePart") then
+                        p.CanCollide = false
+                    end
+                end
+            end)
         else
-            if antiAfkConn then antiAfkConn:Disconnect() end
+            if noclipConn then noclipConn:Disconnect() end
         end
     end
 })

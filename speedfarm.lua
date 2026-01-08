@@ -5,8 +5,8 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 
-local SPEED = 65
-local DIST = 160
+local SPEED = 120
+local DIST = 200
 local dir = 1
 local velObj
 local gyro

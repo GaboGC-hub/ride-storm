@@ -1,5 +1,5 @@
 --=====================================
--- 🏍️ SPEED FARM ESTABLE (ANTI BUG)
+-- 🏍️ SPEED FARM (SAFE – NO VEHICLE MOVE)
 --=====================================
 
 local Players = game:GetService("Players")
@@ -10,77 +10,45 @@ local RS = getgenv().RideStorm
 if not RS then return end
 
 local conn
-local angle = 0
-local cachedParts = {}
+local dir = 1
 
--- CONFIG REALISTA
-local STEP = 5        -- studs por tick (≈ 90–110 km/h reales)
-local ANGLE_STEP = 0.18
-local HEIGHT_OFFSET = 0
+-- CONFIG REAL
+local STEP = 4.5        -- studs por tick (≈ 85–95 km/h reales)
+local DIST = 40         -- recorrido corto (anti desync)
 
-local function getVehicle()
+local function getHumanoid()
     local char = player.Character
     if not char then return end
-
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if not hum or not hum.SeatPart then return end
-
-    local veh = hum.SeatPart.Parent
-    local root = veh.PrimaryPart or veh:FindFirstChildWhichIsA("BasePart")
-    if not root then return end
-
-    return veh, root
+    return char:FindFirstChildOfClass("Humanoid"), char:FindFirstChild("HumanoidRootPart")
 end
 
--- 🔒 FREEZE FÍSICA (clave)
-local function lockVehicle(veh)
-    cachedParts = {}
-    for _, v in ipairs(veh:GetDescendants()) do
-        if v:IsA("BasePart") then
-            cachedParts[v] = v.CanCollide
-            v.CanCollide = false
-            v.AssemblyLinearVelocity = Vector3.zero
-            v.AssemblyAngularVelocity = Vector3.zero
-        end
-        if v:IsA("HingeConstraint") or v:IsA("SpringConstraint") then
-            v.Enabled = false
-        end
-    end
-end
-
-local function unlockVehicle()
-    for part, collide in pairs(cachedParts) do
-        if part and part.Parent then
-            part.CanCollide = collide
-        end
-    end
-    cachedParts = {}
-end
+local startPos
 
 local function start()
     if conn then return end
 
-    local veh, root = getVehicle()
-    if not veh then return end
+    local hum, hrp = getHumanoid()
+    if not hum or not hrp then return end
+    if not hum.SeatPart then return end -- 🔑 CLAVE
 
-    lockVehicle(veh)
-    local baseY = root.Position.Y
+    startPos = hrp.Position
 
     conn = RunService.Heartbeat:Connect(function()
         if not RS.SpeedFarm then return end
 
-        angle += ANGLE_STEP
+        -- si se baja, parar
+        if not hum.SeatPart then
+            RS.SpeedFarm = false
+            return
+        end
 
-        local offset = Vector3.new(
-            math.cos(angle) * STEP,
-            0,
-            math.sin(angle) * STEP
-        )
+        local offset = Vector3.new(STEP * dir, 0, 0)
+        hrp.CFrame = hrp.CFrame + offset
 
-        local pos = root.Position + offset
-        pos = Vector3.new(pos.X, baseY + HEIGHT_OFFSET, pos.Z)
-
-        root.CFrame = CFrame.new(pos, pos + offset)
+        if (hrp.Position - startPos).Magnitude >= DIST then
+            dir *= -1
+            startPos = hrp.Position
+        end
     end)
 end
 
@@ -89,10 +57,8 @@ local function stop()
         conn:Disconnect()
         conn = nil
     end
-    unlockVehicle()
 end
 
--- LOOP
 task.spawn(function()
     while task.wait(0.2) do
         if RS.SpeedFarm then

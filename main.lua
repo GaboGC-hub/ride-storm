@@ -146,14 +146,14 @@ DeliveryTab:CreateToggle({
     CurrentValue = false,
     Callback = function(v)
         getgenv().RideStorm.BoxFarm = v
-        teleportTo(JOB1)
+        teleportTo("JOB1")
         if v then
             loadstring(game:HttpGet(
                 "https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/autofarm.lua"
             ))()
         end
     end
-
+})
 
 -- SPEED FARM integration: DOES NOT overwrite RS table and uses local module
 DeliveryTab:CreateSection("Speed Farm (Seguro)")

@@ -124,17 +124,31 @@ local selectedMap = "Spawn"
 
 local function teleportTo(workspaceName)
     local char = player.Character or player.CharacterAdded:Wait()
-    local hrp = char:WaitForChild("HumanoidRootPart", 5)
+    local hrp = char:WaitForChild("HumanoidRootPart")
+
     local map = workspace:FindFirstChild(workspaceName)
     if not map then
-        Rayfield:Notify({Title = "RideStorm", Content = "Mapa no cargado: "..workspaceName, Duration = 3})
+        Rayfield:Notify({
+            Title = "RideStorm",
+            Content = "Mapa no cargado",
+            Duration = 3
+        })
         return
     end
-    local part = map:FindFirstChildWhichIsA("BasePart", true)
-    if part and hrp then
-        hrp.CFrame = part.CFrame + Vector3.new(0,6,0)
+
+    local part
+    for _, v in ipairs(map:GetDescendants()) do
+        if v:IsA("BasePart") then
+            part = v
+            break
+        end
+    end
+
+    if part then
+        hrp.CFrame = part.CFrame + Vector3.new(0,10,0)
     end
 end
+
 
 TeleportTab:CreateDropdown({
     Name = "Selecciona un mapa",
@@ -164,7 +178,6 @@ DeliveryTab:CreateToggle({
     CurrentValue = false,
     Callback = function(v)
         RS.Farming = v
-        RS.BoxFarm = v
 
         if v then
             teleportTo("JOB1")
@@ -176,6 +189,7 @@ DeliveryTab:CreateToggle({
         end
     end
 })
+
 
 
 --------------------------
@@ -211,22 +225,29 @@ DeliveryTab:CreateToggle({
 -- PLAYER UTILITIES
 --------------------------
 PlayerTab:CreateToggle({
-    Name = "Noclip (solo tu personaje)",
+    Name = "Noclip (estable)",
     CurrentValue = false,
     Callback = function(v)
         if v then
-            RS._noclipConn = RunService.Heartbeat:Connect(function()
-                local c = player.Character
-                if not c then return end
-                for _, p in ipairs(c:GetDescendants()) do
-                    if p:IsA("BasePart") then p.CanCollide = false end
+            RS._noclipConn = RunService.Stepped:Connect(function()
+                local char = player.Character
+                if not char then return end
+                for _, p in ipairs(char:GetChildren()) do
+                    if p:IsA("BasePart") then
+                        p.CanCollide = false
+                        p.AssemblyLinearVelocity = Vector3.zero
+                    end
                 end
             end)
         else
-            if RS._noclipConn then RS._noclipConn:Disconnect() RS._noclipConn = nil end
+            if RS._noclipConn then
+                RS._noclipConn:Disconnect()
+                RS._noclipConn = nil
+            end
         end
     end
 })
+    
 
 --------------------------
 -- MISC UTILITIES

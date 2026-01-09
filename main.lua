@@ -138,52 +138,22 @@ for _, t in ipairs(Teleports) do
     })
 end
 
--- SAFE autofarm trigger (uses local file)
+------------------------------------------------
+-- 🚚 AUTOFARM CAJAS (NO TOCAR, FUNCIONA)
+------------------------------------------------
 DeliveryTab:CreateToggle({
     Name = "📦 Auto Delivery (Cajas)",
     CurrentValue = false,
     Callback = function(v)
-        RS.BoxFarm = v
+        getgenv().RideStorm.BoxFarm = v
+        teleportTo(JOB1)
         if v then
-            -- set money baseline if possible
-            local stats = player:FindFirstChild("leaderstats")
-            if stats then
-                local cash = stats:FindFirstChild("Cash") or stats:FindFirstChild("cash") or stats:FindFirstChild("Money")
-                if cash then RS._money_base = cash.Value end
-            end
-
-            -- force load job area (try to ensure workspace node present)
-            teleportTo("JOB1")
-            task.wait(1.5)
-
-            -- load local autofarm (prefer local file in repo)
-            if not RS._loaded.autofarm then
-                -- try remote first (github), fallback to assume local file present
-                local ok = safeLoad("https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/autofarm.lua")
-                if ok then RS._loaded.autofarm = true end
-            end
-
-            -- if still not loaded, try run local copy (if user pasted)
-            if not RS._loaded.autofarm then
-                local ok, err = pcall(function()
-                    -- try to require a module named 'autofarm' if present in environment (some exploit envs support)
-                    -- otherwise try to run existing global 'autofarm.lua' in workspace (user may paste it)
-                    if _G and type(_G.autofarm) == "function" then
-                        _G.autofarm()
-                        RS._loaded.autofarm = true
-                    else
-                        -- last resort: warn user to paste autofarm.lua back into repo
-                        error("autofarm module not found remotely and no local fallback")
-                    end
-                end)
-                if not ok then
-                    Rayfield:Notify({Title="RideStorm", Content="No se pudo cargar autofarm: "..tostring(err), Duration=4})
-                    RS.BoxFarm = false
-                end
-            end
+            loadstring(game:HttpGet(
+                "https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/autofarm.lua"
+            ))()
         end
     end
-})
+
 
 -- SPEED FARM integration: DOES NOT overwrite RS table and uses local module
 DeliveryTab:CreateSection("Speed Farm (Seguro)")

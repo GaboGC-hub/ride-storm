@@ -45,14 +45,6 @@ local TeleportTab = Window:CreateTab("📍 Teleports")
 local PlayerTab   = Window:CreateTab("👤 Player")
 local MiscTab     = Window:CreateTab("🎲 Misc")
 
--- Crear secciones + divisores
--- Delivery
-DeliveryTab:CreateSection("📦 Auto Delivery")
-DeliveryTab:CreateDivider()
-DeliveryTab:CreateSection("🏍️ Speed Farm")
-DeliveryTab:CreateDivider()
-DeliveryTab:CreateSection("💰 Ganancias")
-
 -- Teleports
 TeleportTab:CreateSection("Teleports")
 -- Player
@@ -67,38 +59,6 @@ RS.BoxFarm = RS.BoxFarm or false
 RS.SpeedFarm = RS.SpeedFarm or false
 RS.SpeedKMH = RS.SpeedKMH or 120
 RS._loaded = RS._loaded or {}
-
---------------------------
--- MONEY TRACKER
---------------------------
-local moneyLabel = DeliveryTab:CreateLabel("💰 Dinero ganado: $0")
-local baseCash = nil
-
-local function hookMoney()
-    local stats = player:FindFirstChild("leaderstats")
-    if not stats then return false end
-    local cash = stats:FindFirstChild("Cash") or stats:FindFirstChild("cash") or stats:FindFirstChild("Money")
-    if not cash then return false end
-
-    baseCash = cash.Value
-    moneyLabel:Set("💰 Dinero ganado: $0")
-
-    cash:GetPropertyChangedSignal("Value"):Connect(function()
-        local gained = cash.Value - (baseCash or 0)
-        if gained < 0 then gained = 0 end
-        moneyLabel:Set("💰 Dinero ganado: $" .. tostring(gained))
-    end)
-    return true
-end
-
-task.spawn(function()
-    if not hookMoney() then
-        player.CharacterAdded:Connect(function()
-            task.wait(1.0)
-            pcall(hookMoney)
-        end)
-    end
-end)
 
 --------------------------
 -- TELEPORT FUNCTION
@@ -173,6 +133,7 @@ TeleportTab:CreateButton({
 --------------------------
 -- AUTOFARM CAJAS
 --------------------------
+DeliveryTab:CreateSection("📦 Auto Delivery")
 DeliveryTab:CreateToggle({
     Name = "📦 Auto Delivery (Cajas)",
     CurrentValue = false,
@@ -189,21 +150,12 @@ DeliveryTab:CreateToggle({
         end
     end
 })
-
-
+DeliveryTab:CreateDivider()
 
 --------------------------
 -- SPEED FARM
 --------------------------
-DeliveryTab:CreateSlider({
-    Name = "Velocidad simulada (km/h)",
-    Range = {70, 350},
-    Increment = 5,
-    Suffix = "km/h",
-    CurrentValue = RS.SpeedKMH,
-    Callback = function(v) RS.SpeedKMH = v end
-})
-
+DeliveryTab:CreateSection("🏍️ Speed Farm")
 DeliveryTab:CreateToggle({
     Name = "🏍️ Speed Farm (Seguro)",
     CurrentValue = RS.SpeedFarm,
@@ -220,6 +172,40 @@ DeliveryTab:CreateToggle({
         end
     end
 })
+DeliveryTab:CreateDivider()
+
+--------------------------
+-- MONEY TRACKER
+--------------------------
+DeliveryTab:CreateSection("💰 Ganancias")
+local moneyLabel = DeliveryTab:CreateLabel("💰 Dinero ganado: $0")
+local baseCash = nil
+
+local function hookMoney()
+    local stats = player:FindFirstChild("leaderstats")
+    if not stats then return false end
+    local cash = stats:FindFirstChild("Cash") or stats:FindFirstChild("cash") or stats:FindFirstChild("Money")
+    if not cash then return false end
+
+    baseCash = cash.Value
+    moneyLabel:Set("💰 Dinero ganado: $0")
+
+    cash:GetPropertyChangedSignal("Value"):Connect(function()
+        local gained = cash.Value - (baseCash or 0)
+        if gained < 0 then gained = 0 end
+        moneyLabel:Set("💰 Dinero ganado: $" .. tostring(gained))
+    end)
+    return true
+end
+
+task.spawn(function()
+    if not hookMoney() then
+        player.CharacterAdded:Connect(function()
+            task.wait(1.0)
+            pcall(hookMoney)
+        end)
+    end
+end)
 
 --------------------------
 -- PLAYER UTILITIES

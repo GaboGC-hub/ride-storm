@@ -172,6 +172,36 @@ DeliveryTab:CreateToggle({
     end
 })
 
+DeliveryTab:CreateSlider({
+    Name = "🚀 Speed Farm Velocidad",
+    Range = {80, 500},
+    Increment = 10,
+    Suffix = "km/h",
+    CurrentValue = RS.SpeedKMH,
+    Callback = function(v)
+        RS.SpeedKMH = v
+    end
+})
+
+DeliveryTab:CreateSlider({
+    Name = "⬇️ Altura Fly (negativo)",
+    Range = {-100, -1000},
+    Increment = 50,
+    CurrentValue = RS.FlyHeight,
+    Callback = function(v)
+        RS.FlyHeight = v
+    end
+})
+
+DeliveryTab:CreateToggle({
+    Name = "👻 Ocultar ruedas",
+    CurrentValue = RS.HideWheels,
+    Callback = function(v)
+        RS.HideWheels = v
+    end
+})
+
+
 --------------------------
 -- MONEY TRACKER
 --------------------------

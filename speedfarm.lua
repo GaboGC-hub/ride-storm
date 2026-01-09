@@ -9,11 +9,11 @@ local Workspace = game:GetService("Workspace")
 local player = Players.LocalPlayer
 
 -- ===== CONFIG =====
-local SPEED = 300            -- studs/s (~128 km/h real)
-local RADIUS = 110
-local ANGLE_SPEED = 1.1
-local HEIGHT_OFFSET = 3.5  -- altura sobre el suelo (CRÍTICO)
-local RAY_DISTANCE = 20
+local SPEED = 180           -- studs/s (~128 km/h real)
+local RADIUS = 120
+local ANGLE_SPEED = 1.2
+local HEIGHT_OFFSET = 4.5  -- altura sobre el suelo (CRÍTICO)
+local RAY_DISTANCE = 40
 
 -- ==================
 local vel, gyro

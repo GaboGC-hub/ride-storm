@@ -1,7 +1,4 @@
--- main.lua (RideStorm - estable)
--- Reemplaza tu main.lua por este
-
--- Prevent double-exec
+-- main.lua (RideStorm - organizado y funcional)
 if getgenv().RideStormLoaded then return end
 getgenv().RideStormLoaded = true
 
@@ -10,7 +7,7 @@ local RunService = game:GetService("RunService")
 local VirtualUser = game:GetService("VirtualUser")
 local player = Players.LocalPlayer
 
--- safe wrapper for http loads (returns true on success)
+-- Safe load de módulos HTTP
 local function safeLoad(url)
     local ok, res = pcall(function() return game:HttpGet(url) end)
     if not ok or not res or res:match("^%s*$") or res:match("^<!DOCTYPE") then
@@ -25,7 +22,7 @@ local function safeLoad(url)
     return true
 end
 
--- Rayfield (oficial)
+-- Cargar Rayfield
 local Rayfield_ok, Rayfield = pcall(function()
     return loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 end)
@@ -34,7 +31,7 @@ if not Rayfield_ok or type(Rayfield) ~= "table" then
     return
 end
 
--- Create window (Rayfield expects strings for CreateTab)
+-- Crear ventana
 local Window = Rayfield:CreateWindow({
     Name = "RideStorm 🏍️",
     LoadingTitle = "RideStorm",
@@ -42,32 +39,34 @@ local Window = Rayfield:CreateWindow({
     ConfigurationSaving = { Enabled = false }
 })
 
--- Tabs (correct API usage)
+-- Crear tabs
 local DeliveryTab = Window:CreateTab("🚚 Delivery")
 local TeleportTab = Window:CreateTab("📍 Teleports")
 local PlayerTab   = Window:CreateTab("👤 Player")
 local MiscTab     = Window:CreateTab("🎲 Misc")
 
--- Sections (correct API usage)
+-- Separadores y secciones
 DeliveryTab:CreateSection("Auto Delivery")
+DeliveryTab:CreateDivider()
 DeliveryTab:CreateSection("Speed Farm")
+DeliveryTab:CreateDivider()
 DeliveryTab:CreateSection("Ganancias")
 
-TeleportTab:CreateSection("Mapas")
+TeleportTab:CreateSection("Teleports")
 PlayerTab:CreateSection("Movimiento")
 MiscTab:CreateSection("Utilidades")
 
--- Ensure global storage (do NOT overwrite if exists)
+-- Global storage
 getgenv().RideStorm = getgenv().RideStorm or {}
 local RS = getgenv().RideStorm
-
--- Fields we need (create only if missing)
 RS.BoxFarm = RS.BoxFarm or false
 RS.SpeedFarm = RS.SpeedFarm or false
 RS.SpeedKMH = RS.SpeedKMH or 120
 RS._loaded = RS._loaded or {}
 
--- MONEY TRACKER (robusto con re-hook on respawn)
+--------------------------
+-- MONEY TRACKER
+--------------------------
 local moneyLabel = DeliveryTab:CreateLabel("💰 Dinero ganado: $0")
 local baseCash = nil
 
@@ -88,10 +87,8 @@ local function hookMoney()
     return true
 end
 
--- Hook now and when character spawn (leaderstats can re-appear)
 task.spawn(function()
     if not hookMoney() then
-        -- wait for leaderstats if not present
         player.CharacterAdded:Connect(function()
             task.wait(1.0)
             pcall(hookMoney)
@@ -99,7 +96,9 @@ task.spawn(function()
     end
 end)
 
--- TELEPORTS (buttons)
+--------------------------
+-- TELEPORT FUNCTION
+--------------------------
 local Teleports = {
     {"Irish Islands", "mapa2"},
     {"Alp Mountains", "mapa3"},
@@ -117,6 +116,8 @@ local Teleports = {
     {"Truckers Bay (JOB)", "JOB1"},
 }
 
+local selectedMap = "Spawn"
+
 local function teleportTo(workspaceName)
     local char = player.Character or player.CharacterAdded:Wait()
     local hrp = char:WaitForChild("HumanoidRootPart", 5)
@@ -127,60 +128,115 @@ local function teleportTo(workspaceName)
     end
     local part = map:FindFirstChildWhichIsA("BasePart", true)
     if part and hrp then
-        hrp.CFrame = part.CFrame + Vector3.new(0, 6, 0)
+        hrp.CFrame = part.CFrame + Vector3.new(0,6,0)
     end
 end
 
-for _, t in ipairs(Teleports) do
-    TeleportTab:CreateButton({
-        Name = t[1],
-        Callback = function() teleportTo(t[2]) end
-    })
-end
+TeleportTab:CreateDropdown({
+    Name = "Selecciona un mapa",
+    Options = (function() local t={} for _,v in ipairs(Teleports) do table.insert(t,v[1]) end return t end)(),
+    CurrentOption = "Spawn",
+    Callback = function(option)
+        selectedMap = option
+    end
+})
 
-------------------------------------------------
--- 🚚 AUTOFARM CAJAS (NO TOCAR, FUNCIONA)
-------------------------------------------------
-DeliveryTab:CreateToggle({
-    Name = "📦 Auto Delivery (Cajas)",
-    CurrentValue = false,
-    Callback = function(v)
-        getgenv().RideStorm.BoxFarm = v
-        teleportTo("JOB1")
-        if v then
-            loadstring(game:HttpGet(
-                "https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/autofarm.lua"
-            ))()
+TeleportTab:CreateButton({
+    Name = "📍 Teleport",
+    Callback = function()
+        for _, t in ipairs(Teleports) do
+            if t[1] == selectedMap then
+                teleportTo(t[2])
+            end
         end
     end
 })
 
--- SPEED FARM integration: DOES NOT overwrite RS table and uses local module
+--------------------------
+-- AUTOFARM CAJAS
+--------------------------
+local function startAutofarm()
+    getgenv().RideStorm.Farming = true
+
+    local player = game.Players.LocalPlayer
+    local char = player.Character or player.CharacterAdded:Wait()
+    local hrp = char:WaitForChild("HumanoidRootPart")
+
+    local pickupBox = workspace.DeliveryJob.BoxPickingJob.PickupBox
+    local pickupPrompt = pickupBox:WaitForChild("PickupPrompt")
+
+    local jobPart = workspace.DeliveryJob.BoxPickingJob.Job.Part
+    local jobPrompt = jobPart:WaitForChild("ProximityPrompt")
+
+    -- Re-hook on respawn
+    player.CharacterAdded:Connect(function(char)
+        hrp = char:WaitForChild("HumanoidRootPart")
+    end)
+
+    task.spawn(function()
+        while RS.Farming do
+            if not hrp or not pickupPrompt or not jobPrompt then task.wait(0.5) continue end
+            -- recoger
+            hrp.CFrame = pickupBox.CFrame + Vector3.new(0,5,0)
+            task.wait(0.15)
+            fireproximityprompt(pickupPrompt, 1)
+            -- entregar
+            hrp.CFrame = jobPart.CFrame + Vector3.new(0,5,0)
+            task.wait(0.15)
+            fireproximityprompt(jobPrompt, 1)
+            -- dinero estimado
+            if RS.UpdateMoney then RS.UpdateMoney(100) end
+            task.wait(math.random(8,15)/100)
+        end
+    end)
+end
+
+DeliveryTab:CreateToggle({
+    Name = "📦 Auto Delivery (Cajas)",
+    CurrentValue = false,
+    Callback = function(v)
+        RS.BoxFarm = v
+        RS.Farming = v
+        teleportTo("JOB1")
+        if v then
+            safeLoad("https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/autofarm.lua")
+            startAutofarm()
+        end
+    end
+})
+
+--------------------------
+-- SPEED FARM
+--------------------------
 DeliveryTab:CreateSlider({
     Name = "Velocidad simulada (km/h)",
     Range = {70, 350},
     Increment = 5,
     Suffix = "km/h",
-    CurrentValue = RS.SpeedKMH or 120,
-    Callback = function(v)
-        RS.SpeedKMH = v
-    end
+    CurrentValue = RS.SpeedKMH,
+    Callback = function(v) RS.SpeedKMH = v end
 })
 
 DeliveryTab:CreateToggle({
     Name = "🏍️ Speed Farm (Seguro)",
-    CurrentValue = RS.SpeedFarm or false,
+    CurrentValue = RS.SpeedFarm,
     Callback = function(v)
         RS.SpeedFarm = v
         if v and not RS._loaded.speedfarm then
             local ok = safeLoad("https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/speedfarm.lua")
             if ok then RS._loaded.speedfarm = true end
         end
-        -- speedfarm.lua will watch RS.SpeedFarm and RS.SpeedKMH
+        if RS.SpeedFarm then
+            if RS.StartSeatSpeedFarm then RS.StartSeatSpeedFarm() end
+        else
+            if RS.StopSeatSpeedFarm then RS.StopSeatSpeedFarm() end
+        end
     end
 })
 
--- Player utilities
+--------------------------
+-- PLAYER UTILITIES
+--------------------------
 PlayerTab:CreateToggle({
     Name = "Noclip (solo tu personaje)",
     CurrentValue = false,
@@ -199,7 +255,9 @@ PlayerTab:CreateToggle({
     end
 })
 
--- Anti-AFK
+--------------------------
+-- MISC UTILITIES
+--------------------------
 MiscTab:CreateToggle({
     Name = "Anti-AFK",
     CurrentValue = true,
@@ -214,4 +272,4 @@ MiscTab:CreateToggle({
     end
 })
 
-Rayfield:Notify({Title="RideStorm", Content="Hub cargado (estable) ✅", Duration=4})
+Rayfield:Notify({Title="RideStorm", Content="Hub cargado (organizado) ✅", Duration=4})

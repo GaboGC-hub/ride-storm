@@ -252,4 +252,11 @@ MiscTab:CreateToggle({
     end
 })
 
-Rayfield:Notify({Title="RideStorm", Content="Hub cargado (UI limpia) ✅", Duration=4})
+MiscTab:CreateButton({
+   Name = "Close Hub",
+   Callback = function()
+       Rayfield:Destroy()
+   end,
+})
+
+Rayfield:Notify({Title="RideStorm", Content="Hub cargado ✅", Duration=4})

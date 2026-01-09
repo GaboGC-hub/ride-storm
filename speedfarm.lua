@@ -1,18 +1,27 @@
 --=====================================
--- 🏍️ SPEED FARM SUAVE (ANTI-CHOQUES)
+-- 🏍️ SPEED FARM ESTABLE (NO CAE / NO CHOCA)
 --=====================================
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+
 local player = Players.LocalPlayer
 
-local SPEED = 140            -- studs/s ≈ 128 km/h
-local RADIUS = 120           -- radio del círculo
-local ANGLE_SPEED = 1.2      -- velocidad angular (suavidad)
+-- ===== CONFIG =====
+local SPEED = 140            -- studs/s (~128 km/h real)
+local RADIUS = 110
+local ANGLE_SPEED = 1.1
+local HEIGHT_OFFSET = 3.5    -- altura sobre el suelo (CRÍTICO)
+local RAY_DISTANCE = 20
 
+-- ==================
 local vel, gyro
 local angle = 0
 local centerPos
+
+local rayParams = RaycastParams.new()
+rayParams.FilterType = Enum.RaycastFilterType.Blacklist
 
 local function getVehicle()
     local char = player.Character
@@ -23,10 +32,10 @@ local function getVehicle()
     end
 end
 
-local function enableVehicleNoCollide(vehicle)
-    for _, v in ipairs(vehicle:GetDescendants()) do
-        if v:IsA("BasePart") then
-            v.CanCollide = false
+local function noCollideVehicle(vehicle)
+    for _, p in ipairs(vehicle:GetDescendants()) do
+        if p:IsA("BasePart") then
+            p.CanCollide = false
         end
     end
 end
@@ -39,15 +48,17 @@ local function start()
     if not root then return end
 
     centerPos = root.Position
-    enableVehicleNoCollide(veh)
+    rayParams.FilterDescendantsInstances = {veh, player.Character}
+
+    noCollideVehicle(veh)
 
     vel = Instance.new("BodyVelocity")
-    vel.MaxForce = Vector3.new(1e6, 0, 1e6)
+    vel.MaxForce = Vector3.new(1e6, 1e6, 1e6)
     vel.Parent = root
 
     gyro = Instance.new("BodyGyro")
     gyro.MaxTorque = Vector3.new(0, 1e6, 0)
-    gyro.P = 8000
+    gyro.P = 9000
     gyro.Parent = root
 end
 
@@ -68,16 +79,32 @@ RunService.Heartbeat:Connect(function(dt)
     local root = veh.PrimaryPart or veh:FindFirstChildWhichIsA("BasePart")
     if not root then return end
 
-    -- Movimiento circular (SIN CHOQUES)
+    -- 🔄 movimiento circular suave
     angle += ANGLE_SPEED * dt
-
     local offset = Vector3.new(
         math.cos(angle) * RADIUS,
         0,
         math.sin(angle) * RADIUS
     )
 
-    local targetPos = centerPos + offset
+    -- 📡 raycast al suelo
+    local rayResult = Workspace:Raycast(
+        root.Position,
+        Vector3.new(0, -RAY_DISTANCE, 0),
+        rayParams
+    )
+
+    local y = root.Position.Y
+    if rayResult then
+        y = rayResult.Position.Y + HEIGHT_OFFSET
+    end
+
+    local targetPos = Vector3.new(
+        centerPos.X + offset.X,
+        y,
+        centerPos.Z + offset.Z
+    )
+
     local dir = (targetPos - root.Position).Unit
 
     vel.Velocity = dir * SPEED
@@ -85,7 +112,7 @@ RunService.Heartbeat:Connect(function(dt)
 end)
 
 task.spawn(function()
-    while task.wait(0.4) do
+    while task.wait(0.5) do
         if getgenv().RideStorm.SpeedFarm and not vel then
             start()
         end

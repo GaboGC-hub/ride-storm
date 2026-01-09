@@ -1,82 +1,248 @@
--- RideStorm BASE LIMPIA
+-- main.lua (RideStorm - estable)
+-- Reemplaza tu main.lua por este
+
+-- Prevent double-exec
+if getgenv().RideStormLoaded then return end
+getgenv().RideStormLoaded = true
 
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local VirtualUser = game:GetService("VirtualUser")
 local player = Players.LocalPlayer
 
--- Rayfield
-local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+-- safe wrapper for http loads (returns true on success)
+local function safeLoad(url)
+    local ok, res = pcall(function() return game:HttpGet(url) end)
+    if not ok or not res or res:match("^%s*$") or res:match("^<!DOCTYPE") then
+        warn("RideStorm: safeLoad failed -> " .. tostring(url))
+        return false
+    end
+    local ok2, err = pcall(function() loadstring(res)() end)
+    if not ok2 then
+        warn("RideStorm: module execution failed ->", err)
+        return false
+    end
+    return true
+end
 
+-- Rayfield (oficial)
+local Rayfield_ok, Rayfield = pcall(function()
+    return loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+end)
+if not Rayfield_ok or type(Rayfield) ~= "table" then
+    warn("RideStorm: no se pudo cargar Rayfield. Abortando.")
+    return
+end
+
+-- Create window (Rayfield expects strings for CreateTab)
 local Window = Rayfield:CreateWindow({
     Name = "RideStorm 🏍️",
     LoadingTitle = "RideStorm",
-    LoadingSubtitle = "By GaboGC",
+    LoadingSubtitle = "by GaboGC",
     ConfigurationSaving = { Enabled = false }
 })
 
+-- Tabs (correct API usage)
 local DeliveryTab = Window:CreateTab("🚚 Delivery")
+local TeleportTab = Window:CreateTab("📍 Teleports")
+local PlayerTab   = Window:CreateTab("👤 Player")
+local MiscTab     = Window:CreateTab("🎲 Misc")
 
--- =============================
--- GLOBAL STATE (NO TOCAR MÁS)
--- =============================
+-- Sections (correct API usage)
+DeliveryTab:CreateSection("Auto Delivery")
+DeliveryTab:CreateSection("Speed Farm")
+DeliveryTab:CreateSection("Ganancias")
+
+TeleportTab:CreateSection("Mapas")
+PlayerTab:CreateSection("Movimiento")
+MiscTab:CreateSection("Utilidades")
+
+-- Ensure global storage (do NOT overwrite if exists)
 getgenv().RideStorm = getgenv().RideStorm or {}
-getgenv().RideStorm.BoxFarm = false
-getgenv().RideStorm.SpeedFarm = false
-getgenv().RideStorm.SpeedStuds = 200
+local RS = getgenv().RideStorm
 
--- =============================
--- 💰 MONEY TRACKER (REAL)
--- =============================
+-- Fields we need (create only if missing)
+RS.BoxFarm = RS.BoxFarm or false
+RS.SpeedFarm = RS.SpeedFarm or false
+RS.SpeedKMH = RS.SpeedKMH or 120
+RS._loaded = RS._loaded or {}
+
+-- MONEY TRACKER (robusto con re-hook on respawn)
 local moneyLabel = DeliveryTab:CreateLabel("💰 Dinero ganado: $0")
-local baseMoney
+local baseCash = nil
 
+local function hookMoney()
+    local stats = player:FindFirstChild("leaderstats")
+    if not stats then return false end
+    local cash = stats:FindFirstChild("Cash") or stats:FindFirstChild("cash") or stats:FindFirstChild("Money")
+    if not cash then return false end
+
+    baseCash = cash.Value
+    moneyLabel:Set("💰 Dinero ganado: $0")
+
+    cash:GetPropertyChangedSignal("Value"):Connect(function()
+        local gained = cash.Value - (baseCash or 0)
+        if gained < 0 then gained = 0 end
+        moneyLabel:Set("💰 Dinero ganado: $" .. tostring(gained))
+    end)
+    return true
+end
+
+-- Hook now and when character spawn (leaderstats can re-appear)
 task.spawn(function()
-    local stats = player:WaitForChild("leaderstats")
-    local cash = stats:WaitForChild("cash")
-
-    baseMoney = cash.Value
-    while task.wait(0.5) do
-        moneyLabel:Set("💰 Dinero ganado: $" .. (cash.Value - baseMoney))
+    if not hookMoney() then
+        -- wait for leaderstats if not present
+        player.CharacterAdded:Connect(function()
+            task.wait(1.0)
+            pcall(hookMoney)
+        end)
     end
 end)
 
--- =============================
--- 📦 AUTO DELIVERY
--- =============================
+-- TELEPORTS (buttons)
+local Teleports = {
+    {"Irish Islands", "mapa2"},
+    {"Alp Mountains", "mapa3"},
+    {"Track / Drag Strip", "mapa4"},
+    {"Highway", "mapa5"},
+    {"Stello Pass", "mapa6"},
+    {"Spawn", "mapa7"},
+    {"Canyons / Route 66", "mapa8"},
+    {"Sunset Beach", "mapa9"},
+    {"The Pit", "mapa1"},
+    {"Enduro Course", "mapa10"},
+    {"The States", "mapa11"},
+    {"Isle of Man TT", "mapa12"},
+    {"Vintage Islands", "mapa13"},
+    {"Truckers Bay (JOB)", "JOB1"},
+}
+
+local function teleportTo(workspaceName)
+    local char = player.Character or player.CharacterAdded:Wait()
+    local hrp = char:WaitForChild("HumanoidRootPart", 5)
+    local map = workspace:FindFirstChild(workspaceName)
+    if not map then
+        Rayfield:Notify({Title = "RideStorm", Content = "Mapa no cargado: "..workspaceName, Duration = 3})
+        return
+    end
+    local part = map:FindFirstChildWhichIsA("BasePart", true)
+    if part and hrp then
+        hrp.CFrame = part.CFrame + Vector3.new(0, 6, 0)
+    end
+end
+
+for _, t in ipairs(Teleports) do
+    TeleportTab:CreateButton({
+        Name = t[1],
+        Callback = function() teleportTo(t[2]) end
+    })
+end
+
+-- SAFE autofarm trigger (uses local file)
 DeliveryTab:CreateToggle({
     Name = "📦 Auto Delivery (Cajas)",
     CurrentValue = false,
     Callback = function(v)
-        getgenv().RideStorm.BoxFarm = v
+        RS.BoxFarm = v
         if v then
-            loadstring(game:HttpGet(
-                "https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/autofarm.lua"
-            ))()
+            -- set money baseline if possible
+            local stats = player:FindFirstChild("leaderstats")
+            if stats then
+                local cash = stats:FindFirstChild("Cash") or stats:FindFirstChild("cash") or stats:FindFirstChild("Money")
+                if cash then RS._money_base = cash.Value end
+            end
+
+            -- force load job area (try to ensure workspace node present)
+            teleportTo("JOB1")
+            task.wait(1.5)
+
+            -- load local autofarm (prefer local file in repo)
+            if not RS._loaded.autofarm then
+                -- try remote first (github), fallback to assume local file present
+                local ok = safeLoad("https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/autofarm.lua")
+                if ok then RS._loaded.autofarm = true end
+            end
+
+            -- if still not loaded, try run local copy (if user pasted)
+            if not RS._loaded.autofarm then
+                local ok, err = pcall(function()
+                    -- try to require a module named 'autofarm' if present in environment (some exploit envs support)
+                    -- otherwise try to run existing global 'autofarm.lua' in workspace (user may paste it)
+                    if _G and type(_G.autofarm) == "function" then
+                        _G.autofarm()
+                        RS._loaded.autofarm = true
+                    else
+                        -- last resort: warn user to paste autofarm.lua back into repo
+                        error("autofarm module not found remotely and no local fallback")
+                    end
+                end)
+                if not ok then
+                    Rayfield:Notify({Title="RideStorm", Content="No se pudo cargar autofarm: "..tostring(err), Duration=4})
+                    RS.BoxFarm = false
+                end
+            end
         end
     end
 })
 
--- =============================
--- 🏍️ SPEED FARM
--- =============================
+-- SPEED FARM integration: DOES NOT overwrite RS table and uses local module
+DeliveryTab:CreateSection("Speed Farm (Seguro)")
 DeliveryTab:CreateSlider({
-    Name = "Velocidad (km/h)",
+    Name = "Velocidad simulada (km/h)",
     Range = {70, 350},
     Increment = 5,
-    CurrentValue = 120,
-    Callback = function(kmh)
-        getgenv().RideStorm.SpeedStuds = kmh / 0.9
+    Suffix = "km/h",
+    CurrentValue = RS.SpeedKMH or 120,
+    Callback = function(v)
+        RS.SpeedKMH = v
     end
 })
 
 DeliveryTab:CreateToggle({
-    Name = "🏍️ Speed Farm",
+    Name = "🏍️ Speed Farm (Seguro)",
+    CurrentValue = RS.SpeedFarm or false,
+    Callback = function(v)
+        RS.SpeedFarm = v
+        if v and not RS._loaded.speedfarm then
+            local ok = safeLoad("https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/speedfarm.lua")
+            if ok then RS._loaded.speedfarm = true end
+        end
+        -- speedfarm.lua will watch RS.SpeedFarm and RS.SpeedKMH
+    end
+})
+
+-- Player utilities
+PlayerTab:CreateToggle({
+    Name = "Noclip (solo tu personaje)",
     CurrentValue = false,
     Callback = function(v)
-        getgenv().RideStorm.SpeedFarm = v
         if v then
-            loadstring(game:HttpGet(
-                "https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/speedfarm.lua"
-            ))()
+            RS._noclipConn = RunService.Heartbeat:Connect(function()
+                local c = player.Character
+                if not c then return end
+                for _, p in ipairs(c:GetDescendants()) do
+                    if p:IsA("BasePart") then p.CanCollide = false end
+                end
+            end)
+        else
+            if RS._noclipConn then RS._noclipConn:Disconnect() RS._noclipConn = nil end
         end
     end
 })
+
+-- Anti-AFK
+MiscTab:CreateToggle({
+    Name = "Anti-AFK",
+    CurrentValue = true,
+    Callback = function(v)
+        if v then
+            player.Idled:Connect(function()
+                VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+                task.wait(1)
+                VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+            end)
+        end
+    end
+})
+
+Rayfield:Notify({Title="RideStorm", Content="Hub cargado (estable) ✅", Duration=4})

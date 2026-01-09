@@ -156,7 +156,6 @@ DeliveryTab:CreateToggle({
 })
 
 -- SPEED FARM integration: DOES NOT overwrite RS table and uses local module
-DeliveryTab:CreateSection("Speed Farm (Seguro)")
 DeliveryTab:CreateSlider({
     Name = "Velocidad simulada (km/h)",
     Range = {70, 350},

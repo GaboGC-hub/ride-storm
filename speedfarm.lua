@@ -1,17 +1,18 @@
 --=====================================
--- 🏍️ SPEED FARM OPTIMIZADO
+-- 🏍️ SPEED FARM SUAVE (ANTI-CHOQUES)
 --=====================================
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 
-local SPEED = 140 -- studs/s ≈ 128 km/h (ajustable)
-local RANGE = 120
-local direction = 1
+local SPEED = 140            -- studs/s ≈ 128 km/h
+local RADIUS = 120           -- radio del círculo
+local ANGLE_SPEED = 1.2      -- velocidad angular (suavidad)
 
-local vel
-local originPos
+local vel, gyro
+local angle = 0
+local centerPos
 
 local function getVehicle()
     local char = player.Character
@@ -22,6 +23,14 @@ local function getVehicle()
     end
 end
 
+local function enableVehicleNoCollide(vehicle)
+    for _, v in ipairs(vehicle:GetDescendants()) do
+        if v:IsA("BasePart") then
+            v.CanCollide = false
+        end
+    end
+end
+
 local function start()
     local veh = getVehicle()
     if not veh then return end
@@ -29,39 +38,54 @@ local function start()
     local root = veh.PrimaryPart or veh:FindFirstChildWhichIsA("BasePart")
     if not root then return end
 
-    originPos = root.Position
+    centerPos = root.Position
+    enableVehicleNoCollide(veh)
 
     vel = Instance.new("BodyVelocity")
     vel.MaxForce = Vector3.new(1e6, 0, 1e6)
-    vel.Velocity = root.CFrame.LookVector * SPEED
     vel.Parent = root
+
+    gyro = Instance.new("BodyGyro")
+    gyro.MaxTorque = Vector3.new(0, 1e6, 0)
+    gyro.P = 8000
+    gyro.Parent = root
 end
 
 local function stop()
     if vel then vel:Destroy() vel = nil end
+    if gyro then gyro:Destroy() gyro = nil end
 end
 
-RunService.Heartbeat:Connect(function()
+RunService.Heartbeat:Connect(function(dt)
     if not getgenv().RideStorm.SpeedFarm then
         stop()
         return
     end
 
     local veh = getVehicle()
-    if not veh or not vel then return end
+    if not veh or not vel or not gyro then return end
 
     local root = veh.PrimaryPart or veh:FindFirstChildWhichIsA("BasePart")
     if not root then return end
 
-    if (root.Position - originPos).Magnitude > RANGE then
-        direction *= -1
-        originPos = root.Position
-        vel.Velocity = root.CFrame.LookVector * SPEED * direction
-    end
+    -- Movimiento circular (SIN CHOQUES)
+    angle += ANGLE_SPEED * dt
+
+    local offset = Vector3.new(
+        math.cos(angle) * RADIUS,
+        0,
+        math.sin(angle) * RADIUS
+    )
+
+    local targetPos = centerPos + offset
+    local dir = (targetPos - root.Position).Unit
+
+    vel.Velocity = dir * SPEED
+    gyro.CFrame = CFrame.lookAt(root.Position, root.Position + dir)
 end)
 
 task.spawn(function()
-    while task.wait(0.3) do
+    while task.wait(0.4) do
         if getgenv().RideStorm.SpeedFarm and not vel then
             start()
         end

@@ -9,11 +9,11 @@ local Workspace = game:GetService("Workspace")
 local player = Players.LocalPlayer
 
 -- ===== CONFIG =====
-local SPEED = 140            -- studs/s (~128 km/h real)
+local SPEED = 300            -- studs/s (~128 km/h real)
 local RADIUS = 110
 local ANGLE_SPEED = 1.1
-local HEIGHT_OFFSET = 6   -- altura sobre el suelo (CRÍTICO)
-local RAY_DISTANCE = 25
+local HEIGHT_OFFSET = 3.5  -- altura sobre el suelo (CRÍTICO)
+local RAY_DISTANCE = 20
 
 -- ==================
 local vel, gyro
@@ -79,36 +79,39 @@ RunService.Heartbeat:Connect(function(dt)
     local root = veh.PrimaryPart or veh:FindFirstChildWhichIsA("BasePart")
     if not root then return end
 
-    -- 🔄 movimiento circular suave
     angle += ANGLE_SPEED * dt
-    local offset = Vector3.new(
-        math.cos(angle) * RADIUS,
-        0,
-        math.sin(angle) * RADIUS
-    )
 
-    -- 📡 raycast al suelo
+    -- movimiento circular SOLO XZ
+    local moveDir = Vector3.new(
+        math.cos(angle),
+        0,
+        math.sin(angle)
+    ).Unit
+
+    -- velocidad PLANA
+    vel.Velocity = moveDir * SPEED
+
+    -- raycast al suelo
     local rayResult = Workspace:Raycast(
         root.Position,
         Vector3.new(0, -RAY_DISTANCE, 0),
         rayParams
     )
 
-    local y = root.Position.Y
     if rayResult then
-        y = rayResult.Position.Y + HEIGHT_OFFSET
+        -- 🔒 ALTURA BLOQUEADA (NO VELOCIDAD)
+        root.CFrame = CFrame.new(
+            root.Position.X,
+            rayResult.Position.Y + HEIGHT_OFFSET,
+            root.Position.Z
+        )
     end
 
-    local targetPos = Vector3.new(
-        centerPos.X + offset.X,
-        y,
-        centerPos.Z + offset.Z
+    -- orientación suave
+    gyro.CFrame = CFrame.lookAt(
+        root.Position,
+        root.Position + moveDir
     )
-
-    local dir = (targetPos - root.Position).Unit
-
-    vel.Velocity = dir * SPEED
-    gyro.CFrame = CFrame.lookAt(root.Position, root.Position + dir)
 end)
 
 task.spawn(function()

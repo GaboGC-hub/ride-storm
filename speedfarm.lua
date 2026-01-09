@@ -1,5 +1,5 @@
 --=====================================
--- 🏍️ SPEED FARM (SAFE – NO VEHICLE MOVE)
+-- 🏍️ SPEED FARM (BOX-LOGIC STYLE)
 --=====================================
 
 local Players = game:GetService("Players")
@@ -11,27 +11,37 @@ if not RS then return end
 
 local conn
 local dir = 1
+local baseY
+local baseCF
 
 -- CONFIG REAL
-local STEP = 4.5        -- studs por tick (≈ 85–95 km/h reales)
-local DIST = 40         -- recorrido corto (anti desync)
+local STEP = 6        -- studs por tick (≈ 100–115 km/h reales)
+local DIST = 35       -- recorrido corto (anti desync)
 
-local function getHumanoid()
+local function get()
     local char = player.Character
     if not char then return end
-    return char:FindFirstChildOfClass("Humanoid"), char:FindFirstChild("HumanoidRootPart")
+
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+
+    if not hum or not hrp then return end
+    if not hum.SeatPart then return end -- 🔑 clave
+
+    return hum, hrp
 end
 
-local startPos
+local startX
 
 local function start()
     if conn then return end
 
-    local hum, hrp = getHumanoid()
-    if not hum or not hrp then return end
-    if not hum.SeatPart then return end -- 🔑 CLAVE
+    local hum, hrp = get()
+    if not hum then return end
 
-    startPos = hrp.Position
+    baseY = hum.SeatPart.Position.Y
+    baseCF = hrp.CFrame
+    startX = hrp.Position.X
 
     conn = RunService.Heartbeat:Connect(function()
         if not RS.SpeedFarm then return end
@@ -43,11 +53,16 @@ local function start()
         end
 
         local offset = Vector3.new(STEP * dir, 0, 0)
-        hrp.CFrame = hrp.CFrame + offset
+        local newPos = hrp.Position + offset
 
-        if (hrp.Position - startPos).Magnitude >= DIST then
+        -- 🔒 fijar Y como en cajas
+        newPos = Vector3.new(newPos.X, baseY, newPos.Z)
+
+        hrp.CFrame = CFrame.new(newPos, newPos + offset)
+
+        if math.abs(newPos.X - startX) >= DIST then
             dir *= -1
-            startPos = hrp.Position
+            startX = newPos.X
         end
     end)
 end

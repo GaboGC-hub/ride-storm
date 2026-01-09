@@ -82,32 +82,20 @@ local Teleports = {
 
 local selectedMap = "Spawn"
 
-local function teleportTo(workspaceName)
-    local char = player.Character or player.CharacterAdded:Wait()
-    local hrp = char:WaitForChild("HumanoidRootPart")
-
+local function teleportSafeTo(workspaceName)
     local map = workspace:FindFirstChild(workspaceName)
     if not map then
-        Rayfield:Notify({
-            Title = "RideStorm",
-            Content = "Mapa no cargado",
-            Duration = 3
-        })
+        Rayfield:Notify({Title="RideStorm", Content="Mapa no cargado", Duration=3})
         return
     end
-
-    local part
-    for _, v in ipairs(map:GetDescendants()) do
-        if v:IsA("BasePart") then
-            part = v
-            break
-        end
-    end
-
+    local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    local part = map:FindFirstChildWhichIsA("BasePart")
     if part then
         hrp.CFrame = part.CFrame + Vector3.new(0,10,0)
     end
 end
+
 
 
 TeleportTab:CreateDropdown({
@@ -133,20 +121,33 @@ TeleportTab:CreateButton({
 --------------------------
 -- AUTOFARM CAJAS
 --------------------------
-DeliveryTab:CreateSection("📦 Auto Delivery")
 DeliveryTab:CreateToggle({
     Name = "📦 Auto Delivery (Cajas)",
-    CurrentValue = false,
+    CurrentValue = RS.Farming,
     Callback = function(v)
         RS.Farming = v
 
         if v then
-            teleportTo("JOB1")
+            task.spawn(function()
+                while RS.Farming do
+                    -- Teleport a JOB1 si no estás allí
+                    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                        local hrp = player.Character.HumanoidRootPart
+                        if hrp.Position.Magnitude > 500 then -- ejemplo, estás lejos
+                            teleportTo("JOB1")
+                            task.wait(1)
+                        end
+                    end
 
-            if not RS._loaded.autofarm then
-                safeLoad("https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/autofarm.lua")
-                RS._loaded.autofarm = true
-            end
+                    -- Ejecutar autofarm si no cargado
+                    if not RS._loaded.autofarm then
+                        safeLoad("https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/autofarm.lua")
+                        RS._loaded.autofarm = true
+                    end
+
+                    task.wait(0.5)
+                end
+            end)
         end
     end
 })
@@ -206,8 +207,13 @@ DeliveryTab:CreateToggle({
 -- MONEY TRACKER
 --------------------------
 DeliveryTab:CreateSection("💰 Ganancias")
+
 local moneyLabel = DeliveryTab:CreateLabel("💰 Dinero ganado: $0")
+local perMinLabel = DeliveryTab:CreateLabel("🕒 Ganancia por minuto: $0")
+
 local baseCash = nil
+local sessionStartTime = os.time()
+local lastCash = 0
 
 local function hookMoney()
     local stats = player:FindFirstChild("leaderstats")
@@ -216,13 +222,26 @@ local function hookMoney()
     if not cash then return false end
 
     baseCash = cash.Value
-    moneyLabel:Set("💰 Dinero ganado: $0")
+    lastCash = cash.Value
+    sessionStartTime = os.time()
 
-    cash:GetPropertyChangedSignal("Value"):Connect(function()
-        local gained = cash.Value - (baseCash or 0)
-        if gained < 0 then gained = 0 end
+    local function updateLabels()
+        local gained = cash.Value - baseCash
+        local sessionTime = math.max(1, os.time() - sessionStartTime)
+        local perMin = math.floor(gained / sessionTime * 60)
         moneyLabel:Set("💰 Dinero ganado: $" .. tostring(gained))
+        perMinLabel:Set("🕒 Ganancia por minuto: $" .. tostring(perMin))
+    end
+
+    cash:GetPropertyChangedSignal("Value"):Connect(updateLabels)
+    
+    task.spawn(function()
+        while true do
+            updateLabels()
+            task.wait(5)
+        end
     end)
+    
     return true
 end
 

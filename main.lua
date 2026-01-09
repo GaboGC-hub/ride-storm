@@ -1,4 +1,4 @@
--- main.lua (RideStorm - organizado y funcional)
+-- main.lua (RideStorm - UI limpia y funcional)
 if getgenv().RideStormLoaded then return end
 getgenv().RideStormLoaded = true
 
@@ -45,15 +45,19 @@ local TeleportTab = Window:CreateTab("📍 Teleports")
 local PlayerTab   = Window:CreateTab("👤 Player")
 local MiscTab     = Window:CreateTab("🎲 Misc")
 
--- Separadores y secciones
-DeliveryTab:CreateSection("Auto Delivery")
+-- Crear secciones + divisores
+-- Delivery
+DeliveryTab:CreateSection("📦 Auto Delivery")
 DeliveryTab:CreateDivider()
-DeliveryTab:CreateSection("Speed Farm")
+DeliveryTab:CreateSection("🏍️ Speed Farm")
 DeliveryTab:CreateDivider()
-DeliveryTab:CreateSection("Ganancias")
+DeliveryTab:CreateSection("💰 Ganancias")
 
+-- Teleports
 TeleportTab:CreateSection("Teleports")
+-- Player
 PlayerTab:CreateSection("Movimiento")
+-- Misc
 MiscTab:CreateSection("Utilidades")
 
 -- Global storage
@@ -272,4 +276,4 @@ MiscTab:CreateToggle({
     end
 })
 
-Rayfield:Notify({Title="RideStorm", Content="Hub cargado (organizado) ✅", Duration=4})
+Rayfield:Notify({Title="RideStorm", Content="Hub cargado (UI limpia) ✅", Duration=4})

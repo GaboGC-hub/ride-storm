@@ -28,20 +28,20 @@ local function stop()
 end
 
 RunService.Heartbeat:Connect(function()
-    if not enabled then return end
+    if not RS.SpeedFarm then return end
 
-    local seat = getSeat()
-    if not seat then
-        stop()
-        return
-    end
+    local char = player.Character
+    if not char then return end
 
-    -- Engaño: mantener throttle activo
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum or not hum.SeatPart then return end
+
+    local seat = hum.SeatPart
+    if not seat:IsA("VehicleSeat") then return end
+
     seat.Throttle = 1
     seat.Steer = 0
-
-    -- Micro ajuste imperceptible (NO mueve la moto)
-    seat.CFrame = baseCFrame
+    seat:SetAttribute("Speed", RS.SpeedKMH)
 end)
 
 -- Exponer

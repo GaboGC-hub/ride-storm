@@ -150,7 +150,6 @@ DeliveryTab:CreateToggle({
         end
     end
 })
-DeliveryTab:CreateDivider()
 
 --------------------------
 -- SPEED FARM
@@ -172,7 +171,6 @@ DeliveryTab:CreateToggle({
         end
     end
 })
-DeliveryTab:CreateDivider()
 
 --------------------------
 -- MONEY TRACKER

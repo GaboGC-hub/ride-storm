@@ -1,101 +1,94 @@
--- Speed Farm Aéreo ESTABLE (Ride Storm)
+-- Speed Farm Aéreo REAL (Ride Storm)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local player = Players.LocalPlayer
+local Player = Players.LocalPlayer
 
 local RS = getgenv().RideStorm
 if not RS then return end
 
 local active = false
-local bikeModel, root, seat
-local baseCF
-
--- obtener moto
-local function getBike()
-    local char = player.Character
-    if not char then return end
-
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if not hum or not hum.SeatPart then return end
-
-    seat = hum.SeatPart
-    bikeModel = seat:FindFirstAncestorOfClass("Model")
-    if not bikeModel then return end
-
-    root = bikeModel.PrimaryPart
-    if not root then
-        for _, v in ipairs(bikeModel:GetDescendants()) do
-            if v:IsA("BasePart") then
-                root = v
-                break
-            end
-        end
-    end
-
-    return bikeModel and root and seat
-end
+local ap, ao, att0, att1
+local seat, hum, hrp
+local sitConn
 
 local function start()
     if active then return end
-    if not getBike() then return end
+
+    local char = Player.Character
+    if not char then return end
+
+    hum = char:FindFirstChildOfClass("Humanoid")
+    hrp = char:FindFirstChild("HumanoidRootPart")
+    seat = hum and hum.SeatPart
+    if not seat then return end
+
     active = true
 
-    -- elevar moto
-    baseCF = root.CFrame + Vector3.new(0, 50, 0)
-    root.CFrame = baseCF
+    -- Attachments
+    att0 = Instance.new("Attachment", seat)
+    att1 = Instance.new("Attachment", workspace.Terrain)
 
-    -- anclar TODO
-    for _, v in ipairs(bikeModel:GetDescendants()) do
-        if v:IsA("BasePart") then
-            v.Anchored = true
-            v.CanCollide = false
+    -- Align Position
+    ap = Instance.new("AlignPosition", seat)
+    ap.Attachment0 = att0
+    ap.Attachment1 = att1
+    ap.MaxForce = math.huge
+    ap.MaxVelocity = 200
+    ap.Responsiveness = 50
+
+    -- Align Orientation
+    ao = Instance.new("AlignOrientation", seat)
+    ao.Attachment0 = att0
+    ao.Attachment1 = att1
+    ao.MaxTorque = math.huge
+    ao.Responsiveness = 50
+
+    -- Altura inicial
+    local basePos = seat.Position + Vector3.new(0, 180, 0)
+    att1.WorldPosition = basePos
+    att1.WorldCFrame = seat.CFrame
+
+    -- Mantener sentado
+    sitConn = RunService.Stepped:Connect(function()
+        if not RS.SpeedFarm or not hum or not seat or not hrp then return end
+        hrp.CFrame = seat.CFrame
+        if hum.SeatPart ~= seat then
+            seat:Sit(hum)
         end
-    end
+    end)
+
+    -- Movimiento oscilante
+    task.spawn(function()
+        while RS.SpeedFarm do
+            local forward = basePos + seat.CFrame.LookVector * 800
+            local back = basePos - seat.CFrame.LookVector * 800
+
+            att1.WorldPosition = forward
+            repeat task.wait() until (seat.Position - forward).Magnitude < 35 or not RS.SpeedFarm
+            if not RS.SpeedFarm then break end
+            task.wait(0.4)
+
+            att1.WorldPosition = back
+            repeat task.wait() until (seat.Position - back).Magnitude < 35 or not RS.SpeedFarm
+            task.wait(0.4)
+        end
+    end)
 end
 
 local function stop()
     active = false
-    if not bikeModel then return end
-
-    for _, v in ipairs(bikeModel:GetDescendants()) do
-        if v:IsA("BasePart") then
-            v.Anchored = false
-            v.CanCollide = true
-        end
-    end
+    if sitConn then sitConn:Disconnect() sitConn = nil end
+    if ap then ap:Destroy() end
+    if ao then ao:Destroy() end
+    if att0 then att0:Destroy() end
+    if att1 then att1:Destroy() end
 end
 
 RunService.Heartbeat:Connect(function()
-    if not RS.SpeedFarm then
+    if RS.SpeedFarm then
+        if not active then start() end
+    else
         if active then stop() end
-        return
     end
-
-    if not active then
-        start()
-        return
-    end
-
-    if not root or not seat then
-        stop()
-        return
-    end
-
-    -- simular manejo (sin física)
-    seat.Throttle = 1
-    seat.Steer = 0
-
-    local speed = (RS.SpeedKMH or 150) / 20
-    baseCF = baseCF * CFrame.new(0, 0, -speed)
-    root.CFrame = baseCF
 end)
-
-RS.StartSeatSpeedFarm = function()
-    RS.SpeedFarm = true
-end
-
-RS.StopSeatSpeedFarm = function()
-    RS.SpeedFarm = false
-    stop()
-end

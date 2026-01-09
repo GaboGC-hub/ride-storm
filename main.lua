@@ -172,42 +172,16 @@ DeliveryTab:CreateToggle({
     end
 })
 
-DeliveryTab:CreateSlider({
-    Name = "🚀 Speed Farm Velocidad",
-    Range = {80, 500},
-    Increment = 10,
-    Suffix = "km/h",
-    CurrentValue = RS.SpeedKMH,
-    Callback = function(v)
-        RS.SpeedKMH = v
-    end
-})
-
-DeliveryTab:CreateSlider({
-    Name = "⬇️ Altura Fly (negativo)",
-    Range = {-100, -1000},
-    Increment = 50,
-    CurrentValue = RS.FlyHeight,
-    Callback = function(v)
-        RS.FlyHeight = v
-    end
-})
-
-DeliveryTab:CreateToggle({
-    Name = "👻 Ocultar ruedas",
-    CurrentValue = RS.HideWheels,
-    Callback = function(v)
-        RS.HideWheels = v
-    end
-})
-
-
 --------------------------
 -- MONEY TRACKER
 --------------------------
 DeliveryTab:CreateSection("💰 Ganancias")
 local moneyLabel = DeliveryTab:CreateLabel("💰 Dinero ganado: $0")
+local perMinLabel = DeliveryTab:CreateLabel("🕒 Ganancia por minuto: $0")
+
 local baseCash = nil
+local sessionStartTime = os.time()
+local lastCash = 0
 
 local function hookMoney()
     local stats = player:FindFirstChild("leaderstats")
@@ -216,13 +190,26 @@ local function hookMoney()
     if not cash then return false end
 
     baseCash = cash.Value
-    moneyLabel:Set("💰 Dinero ganado: $0")
+    lastCash = cash.Value
+    sessionStartTime = os.time()
 
-    cash:GetPropertyChangedSignal("Value"):Connect(function()
-        local gained = cash.Value - (baseCash or 0)
-        if gained < 0 then gained = 0 end
+    local function updateLabels()
+        local gained = cash.Value - baseCash
+        local sessionTime = math.max(1, os.time() - sessionStartTime)
+        local perMin = math.floor(gained / sessionTime * 60)
         moneyLabel:Set("💰 Dinero ganado: $" .. tostring(gained))
+        perMinLabel:Set("🕒 Ganancia por minuto: $" .. tostring(perMin))
+    end
+
+    cash:GetPropertyChangedSignal("Value"):Connect(updateLabels)
+    
+    task.spawn(function()
+        while true do
+            updateLabels()
+            task.wait(5)
+        end
     end)
+    
     return true
 end
 

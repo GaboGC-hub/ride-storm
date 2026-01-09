@@ -159,55 +159,24 @@ TeleportTab:CreateButton({
 --------------------------
 -- AUTOFARM CAJAS
 --------------------------
-local function startAutofarm()
-    getgenv().RideStorm.Farming = true
-
-    local player = game.Players.LocalPlayer
-    local char = player.Character or player.CharacterAdded:Wait()
-    local hrp = char:WaitForChild("HumanoidRootPart")
-
-    local pickupBox = workspace.DeliveryJob.BoxPickingJob.PickupBox
-    local pickupPrompt = pickupBox:WaitForChild("PickupPrompt")
-
-    local jobPart = workspace.DeliveryJob.BoxPickingJob.Job.Part
-    local jobPrompt = jobPart:WaitForChild("ProximityPrompt")
-
-    -- Re-hook on respawn
-    player.CharacterAdded:Connect(function(char)
-        hrp = char:WaitForChild("HumanoidRootPart")
-    end)
-
-    task.spawn(function()
-        while RS.Farming do
-            if not hrp or not pickupPrompt or not jobPrompt then task.wait(0.5) continue end
-            -- recoger
-            hrp.CFrame = pickupBox.CFrame + Vector3.new(0,5,0)
-            task.wait(0.15)
-            fireproximityprompt(pickupPrompt, 1)
-            -- entregar
-            hrp.CFrame = jobPart.CFrame + Vector3.new(0,5,0)
-            task.wait(0.15)
-            fireproximityprompt(jobPrompt, 1)
-            -- dinero estimado
-            if RS.UpdateMoney then RS.UpdateMoney(100) end
-            task.wait(math.random(8,15)/100)
-        end
-    end)
-end
-
 DeliveryTab:CreateToggle({
     Name = "📦 Auto Delivery (Cajas)",
     CurrentValue = false,
     Callback = function(v)
-        RS.BoxFarm = v
         RS.Farming = v
-        teleportTo("JOB1")
+        RS.BoxFarm = v
+
         if v then
-            safeLoad("https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/autofarm.lua")
-            startAutofarm()
+            teleportTo("JOB1")
+
+            if not RS._loaded.autofarm then
+                safeLoad("https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/autofarm.lua")
+                RS._loaded.autofarm = true
+            end
         end
     end
 })
+
 
 --------------------------
 -- SPEED FARM

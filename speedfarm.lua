@@ -12,8 +12,8 @@ local player = Players.LocalPlayer
 local SPEED = 140            -- studs/s (~128 km/h real)
 local RADIUS = 110
 local ANGLE_SPEED = 1.1
-local HEIGHT_OFFSET = 3.5    -- altura sobre el suelo (CRÍTICO)
-local RAY_DISTANCE = 20
+local HEIGHT_OFFSET = 6   -- altura sobre el suelo (CRÍTICO)
+local RAY_DISTANCE = 25
 
 -- ==================
 local vel, gyro

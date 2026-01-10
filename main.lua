@@ -183,16 +183,15 @@ DeliveryTab:CreateToggle({
             if ok then RS._loaded.speedfarm = true end
         end
         if RS.SpeedFarm then
-            if RS.StartSpeedFarm then RS.StartSpeedFarm() end
+            if RS.StartSeatSpeedFarm then RS.StartSeatSpeedFarm() end
         else
-            if RS.StopSpeedFarm then RS.StopSpeedFarm() end
+            if RS.StopSeatSpeedFarm then RS.StopSeatSpeedFarm() end
         end
     end
 })
 
 -- ALTURA DE VUELO
 RS.FlyHeight = RS.FlyHeight or 200
-RS.HideWheels = RS.HideWheels or false
 
 DeliveryTab:CreateSlider({
     Name = "Altura de vuelo",

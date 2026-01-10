@@ -1,37 +1,164 @@
+-- Speed Farm Fly PRO (Ride Storm)
+
+local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local player = game.Players.LocalPlayer
+local Player = Players.LocalPlayer
+
 local RS = getgenv().RideStorm
 if not RS then return end
 
-local conn
-local studsPerSec = 0
+local active = false
+local ap, ao, att0, att1
+local seat, hum, hrp
+local sitConn
+local wheelWelds = {}
+local hiddenWheels = {}
 
-local function kmhToStuds(kmh)
-    return kmh * 0.277778 * 3.57 -- conversión estable
+--------------------------------------------------
+-- UTILIDADES
+--------------------------------------------------
+
+local function getSeat()
+    local char = Player.Character
+    if not char then return end
+
+    hum = char:FindFirstChildOfClass("Humanoid")
+    hrp = char:FindFirstChild("HumanoidRootPart")
+    seat = hum and hum.SeatPart
+    return seat and hum and hrp
 end
 
-function RS.StartSpeedFarm()
-    if conn then return end
+local function hideWheels()
+    for _, v in ipairs(seat.Parent:GetDescendants()) do
+        if v:IsA("BasePart") then
+            local n = v.Name:lower()
+            if n:find("wheel") or n:find("tire") or n:find("rim") then
+                hiddenWheels[v] = v.Transparency
+                v.Transparency = 1
+            end
+        end
+    end
+end
 
-    conn = RunService.Heartbeat:Connect(function(dt)
-        local char = player.Character
-        if not char then return end
+local function showWheels()
+    for v, t in pairs(hiddenWheels) do
+        if v then v.Transparency = t end
+    end
+    table.clear(hiddenWheels)
+end
 
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        if not hum or not hrp then return end
+local function weldWheels()
+    for _, v in ipairs(seat.Parent:GetDescendants()) do
+        if v:IsA("BasePart") then
+            local n = v.Name:lower()
+            if n:find("wheel") or n:find("tire") or n:find("rim") then
+                local w = Instance.new("WeldConstraint")
+                w.Part0 = seat
+                w.Part1 = v
+                w.Parent = seat
+                table.insert(wheelWelds, w)
+            end
+        end
+    end
+end
 
-        -- 🔥 SE LEE EN TIEMPO REAL
-        studsPerSec = kmhToStuds(RS.SpeedKMH or 120)
+local function unweldWheels()
+    for _, w in ipairs(wheelWelds) do
+        if w then w:Destroy() end
+    end
+    table.clear(wheelWelds)
+end
 
-        local newPos = hrp.Position + move
-        hrp.CFrame = CFrame.new(newPos.X, RS.FlyHeight or newPos.Y, newPos.Z)
+--------------------------------------------------
+-- START / STOP
+--------------------------------------------------
+
+local function start()
+    if active then return end
+    if not getSeat() then return end
+
+    active = true
+
+    if RS.HideWheels then
+        hideWheels()
+    end
+
+    weldWheels()
+
+    att0 = Instance.new("Attachment", seat)
+    att1 = Instance.new("Attachment", workspace.Terrain)
+
+
+    ap = Instance.new("AlignPosition", seat)
+    ap.Attachment0 = att0
+    ap.Attachment1 = att1
+    ap.MaxForce = math.huge
+    ap.MaxVelocity = 1000
+    ap.Responsiveness = 200
+
+
+    ao = Instance.new("AlignOrientation", seat)
+    ao.Attachment0 = att0
+    ao.Attachment1 = att1
+    ao.MaxTorque = math.huge
+    ao.Responsiveness = 200
+
+    local basePos = Vector3.new(
+        seat.Position.X,
+        RS.FlyHeight,
+        seat.Position.Z
+    )
+
+
+
+    att1.WorldPosition = basePos
+    att1.WorldCFrame = seat.CFrame
+
+
+    sitConn = RunService.Stepped:Connect(function()
+        if not RS.SpeedFarm then return end
+
+        if hum.SeatPart ~= seat then
+            hrp.CFrame = seat.CFrame
+            seat:Sit(hum)
+        end
+    end)
+
+
+    task.spawn(function()
+        while RS.SpeedFarm do
+            local speed = RS.SpeedKMH * 6
+            local forward = att1.WorldPosition + seat.CFrame.LookVector * speed
+            att1.WorldPosition = Vector3.new(forward.X, RS.FlyHeight, forward.Z)
+            task.wait(0.1)
+
+
+
+
+
+
+
+        end
     end)
 end
 
-function RS.StopSpeedFarm()
-    if conn then
-        conn:Disconnect()
-        conn = nil
-    end
+local function stop()
+    active = false
+
+    if sitConn then sitConn:Disconnect() sitConn = nil end
+    if ap then ap:Destroy() end
+    if ao then ao:Destroy() end
+    if att0 then att0:Destroy() end
+    if att1 then att1:Destroy() end
+
+    unweldWheels()
+    showWheels()
 end
+
+--------------------------------------------------
+-- LOOP PRINCIPAL
+--------------------------------------------------
+
+RunService.Heartbeat:Connect(function()
+    if RS.SpeedFarm then
+        if not active then start() end

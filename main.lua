@@ -63,22 +63,23 @@ RS._loaded = RS._loaded or {}
 --------------------------
 -- TELEPORT SYSTEM (FIXED)
 --------------------------
-local Teleports = {
-    ["Irish Islands"]       = "mapa2",
-    ["Alp Mountains"]       = "mapa3",
-    ["Track / Drag Strip"]  = "mapa4",
-    ["Highway"]             = "mapa5",
-    ["Stello Pass"]         = "mapa6",
-    ["Spawn"]               = "mapa7",
-    ["Canyons / Route 66"]  = "mapa8",
-    ["Sunset Beach"]        = "mapa9",
-    ["The Pit"]             = "mapa1",
-    ["Enduro Course"]       = "mapa10",
-    ["The States"]          = "mapa11",
-    ["Isle of Man TT"]      = "mapa12",
-    ["Vintage Islands"]     = "mapa13",
-    ["Truckers Bay (JOB)"]  = "JOB1",
+local TeleportMap = {
+    ["Irish Islands"] = "mapa2",
+    ["Alp Mountains"] = "mapa3",
+    ["Track / Drag Strip"] = "mapa4",
+    ["Highway"] = "mapa5",
+    ["Stello Pass"] = "mapa6",
+    ["Spawn"] = "mapa7",
+    ["Canyons / Route 66"] = "mapa8",
+    ["Sunset Beach"] = "mapa9",
+    ["The Pit"] = "mapa1",
+    ["Enduro Course"] = "mapa10",
+    ["The States"] = "mapa11",
+    ["Isle of Man TT"] = "mapa12",
+    ["Vintage Islands"] = "mapa13",
+    ["Truckers Bay (JOB)"] = "JOB1",
 }
+
 
 
 local selectedMapName = "Spawn"
@@ -134,44 +135,41 @@ TeleportTab:CreateDropdown({
     Name = "Selecciona un mapa",
     Options = (function()
         local t = {}
-        for _, v in ipairs(Teleports) do
-            table.insert(t, v[1])
+        for k in pairs(TeleportMap) do
+            table.insert(t, k)
         end
         return t
     end)(),
-    CurrentOption = {"Spawn"},
+    CurrentOption = {"Spawn"}, -- ⚠️ OBLIGATORIO como tabla
     Callback = function(option)
-        selectedMap = option[1] -- 👈 CLAVE
+        if type(option) ~= "table" or not option[1] then
+            warn("Dropdown option inválida:", option)
+            return
+        end
+        selectedMap = option[1]
     end
 })
+
 
 
 TeleportTab:CreateButton({
     Name = "📍 Teleport",
     Callback = function()
-        if not selectedMap then
+        local workspaceName = TeleportMap[selectedMap]
+
+        if not workspaceName then
             Rayfield:Notify({
                 Title = "RideStorm",
-                Content = "Selecciona un mapa primero",
+                Content = "Mapa inválido",
                 Duration = 3
             })
             return
         end
 
-        for _, t in ipairs(Teleports) do
-            if t[1] == selectedMap then
-                teleportTo(t[2])
-                return
-            end
-        end
-
-        Rayfield:Notify({
-            Title = "RideStorm",
-            Content = "Mapa no encontrado",
-            Duration = 3
-        })
+        teleportTo(workspaceName)
     end
 })
+
 
 
 

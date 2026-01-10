@@ -93,7 +93,7 @@ local function start()
     ap.Attachment0 = att0
     ap.Attachment1 = att1
     ap.MaxForce = math.huge
-    ap.MaxVelocity = 547
+    ap.MaxVelocity = 10000
     ap.Responsiveness = 200
 
     ao = Instance.new("AlignOrientation", seat)

@@ -1,6 +1,7 @@
 local RunService = game:GetService("RunService")
 local player = game.Players.LocalPlayer
-local RS = getgenv().RS
+local RS = getgenv().RideStorm
+if not RS then return end
 
 local conn
 local studsPerSec = 0
@@ -23,8 +24,8 @@ function RS.StartSpeedFarm()
         -- 🔥 SE LEE EN TIEMPO REAL
         studsPerSec = kmhToStuds(RS.SpeedKMH or 120)
 
-        local move = hrp.CFrame.LookVector * studsPerSec * dt
-        hrp.CFrame += move + Vector3.new(0, RS.FlyHeight or 200, 0)
+        local newPos = hrp.Position + move
+        hrp.CFrame = CFrame.new(newPos.X, RS.FlyHeight or newPos.Y, newPos.Z)
     end)
 end
 

@@ -327,6 +327,41 @@ PlayerTab:CreateToggle({
     end
 })
 
+local VehicleNoclipConn
+local lastY
+
+VehicleNoclipConn = RunService.Heartbeat:Connect(function()
+    local RS = getgenv().RideStorm
+    if not RS or not RS.SpeedFarm then
+        lastY = nil
+        return
+    end
+
+    local char = player.Character
+    if not char then return end
+
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hum or not hum.SeatPart or not hrp then return end
+
+    local seat = hum.SeatPart
+    local vehicle = seat:FindFirstAncestorOfClass("Model")
+    if not vehicle then return end
+
+    -- guardar altura inicial solo una vez
+    lastY = lastY or seat.Position.Y
+
+    -- noclip real del vehículo
+    for _, part in ipairs(vehicle:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = false
+        end
+    end
+
+    -- soporte vertical (evita caída infinita)
+    local pos = hrp.Position
+    hrp.CFrame = CFrame.new(pos.X, lastY, pos.Z)
+end)
     
 
 --------------------------

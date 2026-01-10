@@ -216,6 +216,7 @@ DeliveryTab:CreateToggle({
     end
 })
 
+
 --------------------------
 -- MONEY TRACKER
 --------------------------
@@ -287,6 +288,39 @@ PlayerTab:CreateToggle({
             for _, p in ipairs(char:GetDescendants()) do
                 if p:IsA("BasePart") then
                     p.CanCollide = false
+                end
+            end
+        end)
+    end
+})
+
+local VehicleNoclipConn
+
+PlayerTab:CreateToggle({
+    Name = "Noclip Vehículo",
+    CurrentValue = false,
+    Callback = function(v)
+        if not v then
+            if VehicleNoclipConn then
+                VehicleNoclipConn:Disconnect()
+                VehicleNoclipConn = nil
+            end
+            return
+        end
+
+        VehicleNoclipConn = RunService.Heartbeat:Connect(function()
+            local char = player.Character
+            if not char then return end
+
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if not hum or not hum.SeatPart then return end
+
+            local vehicle = hum.SeatPart:FindFirstAncestorOfClass("Model")
+            if not vehicle then return end
+
+            for _, part in ipairs(vehicle:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
                 end
             end
         end)

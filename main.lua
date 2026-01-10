@@ -40,7 +40,7 @@ local Window = Rayfield:CreateWindow({
 })
 
 -- Crear tabs
-local DeliveryTab = Window:CreateTab("🚚 Delivery")
+local DeliveryTab = Window:CreateTab("💲 Farm")
 local TeleportTab = Window:CreateTab("📍 Teleports")
 local PlayerTab   = Window:CreateTab("👤 Player")
 local MiscTab     = Window:CreateTab("🎲 Misc")
@@ -183,9 +183,9 @@ DeliveryTab:CreateToggle({
             if ok then RS._loaded.speedfarm = true end
         end
         if RS.SpeedFarm then
-            if RS.StartSeatSpeedFarm then RS.StartSeatSpeedFarm() end
+            if RS.StartSpeedFarm then RS.StartSpeedFarm() end
         else
-            if RS.StopSeatSpeedFarm then RS.StopSeatSpeedFarm() end
+            if RS.StopSpeedFarm then RS.StopSpeedFarm() end
         end
     end
 })

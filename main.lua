@@ -216,15 +216,6 @@ DeliveryTab:CreateSlider({
     end
 })
 
-DeliveryTab:CreateToggle({
-    Name = "🛞 Esconder llantas",
-    CurrentValue = RS.HideWheels,
-    Callback = function(v)
-        RS.HideWheels = v
-    end
-})
-
-
 --------------------------
 -- MONEY TRACKER
 --------------------------
@@ -320,6 +311,13 @@ MiscTab:CreateToggle({
     end
 })
 
+MiscTab:CreateButton({
+   Name = "Close Hub",
+   Callback = function()
+       Rayfield:Destroy()
+   end,
+})
+
 --------------------------
 -- SESSION TIME
 --------------------------
@@ -339,11 +337,6 @@ task.spawn(function()
 end)
 
 
-MiscTab:CreateButton({
-   Name = "Close Hub",
-   Callback = function()
-       Rayfield:Destroy()
-   end,
-})
+
 
 Rayfield:Notify({Title="RideStorm", Content="Hub cargado ✅", Duration=4})

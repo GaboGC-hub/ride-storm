@@ -134,24 +134,45 @@ TeleportTab:CreateDropdown({
     Name = "Selecciona un mapa",
     Options = (function()
         local t = {}
-        for name in pairs(Teleports) do
-            table.insert(t, name)
+        for _, v in ipairs(Teleports) do
+            table.insert(t, v[1])
         end
-        table.sort(t)
         return t
     end)(),
-    CurrentOption = "Spawn",
-    Callback = function(opt)
-        selectedMap = opt
+    CurrentOption = {"Spawn"},
+    Callback = function(option)
+        selectedMap = option[1] -- 👈 CLAVE
     end
 })
 
+
 TeleportTab:CreateButton({
-    Name = "📍 Teletransportar",
+    Name = "📍 Teleport",
     Callback = function()
-        teleportToMap(Teleports[selectedMap])
+        if not selectedMap then
+            Rayfield:Notify({
+                Title = "RideStorm",
+                Content = "Selecciona un mapa primero",
+                Duration = 3
+            })
+            return
+        end
+
+        for _, t in ipairs(Teleports) do
+            if t[1] == selectedMap then
+                teleportTo(t[2])
+                return
+            end
+        end
+
+        Rayfield:Notify({
+            Title = "RideStorm",
+            Content = "Mapa no encontrado",
+            Duration = 3
+        })
     end
 })
+
 
 
 

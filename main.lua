@@ -335,12 +335,24 @@ PlayerTab:CreateToggle({
             if not antiFallForce then
                 local att = Instance.new("Attachment")
                 att.Parent = seat
-
+            
                 antiFallForce = Instance.new("VectorForce")
                 antiFallForce.Attachment0 = att
-                antiFallForce.Force = Vector3.new(0, workspace.Gravity * seat.AssemblyMass, 0)
                 antiFallForce.RelativeTo = Enum.ActuatorRelativeTo.World
                 antiFallForce.Parent = seat
+            end
+            
+            -- solo compensar cuando cae
+            local vy = seat.AssemblyLinearVelocity.Y
+            
+            if vy < -2 then
+                antiFallForce.Force = Vector3.new(
+                    0,
+                    seat.AssemblyMass * workspace.Gravity * 0.9,
+                    0
+                )
+            else
+                antiFallForce.Force = Vector3.zero
             end
         end)
     end

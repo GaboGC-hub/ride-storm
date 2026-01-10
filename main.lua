@@ -61,7 +61,7 @@ RS.SpeedKMH = RS.SpeedKMH or 120
 RS._loaded = RS._loaded or {}
 
 --------------------------
--- TELEPORT FUNCTION
+-- TELEPORT SYSTEM (FIXED)
 --------------------------
 local Teleports = {
     {"Irish Islands", "mapa2"},
@@ -80,55 +80,73 @@ local Teleports = {
     {"Truckers Bay (JOB)", "JOB1"},
 }
 
-local selectedMap = "Spawn"
+local selectedMapName = "Spawn"
 
-local function teleportTo(workspaceName)
+local function getSafePart(model)
+    if model.PrimaryPart then
+        return model.PrimaryPart
+    end
+    for _, v in ipairs(model:GetDescendants()) do
+        if v:IsA("BasePart") and v.Size.Magnitude > 5 then
+            return v
+        end
+    end
+end
+
+local function teleportToMap(mapName)
     local char = player.Character or player.CharacterAdded:Wait()
     local hrp = char:WaitForChild("HumanoidRootPart")
 
-    local map = workspace:FindFirstChild(workspaceName)
-    if not map then
+    local mapModel = workspace:FindFirstChild(mapName)
+    if not mapModel then
         Rayfield:Notify({
             Title = "RideStorm",
-            Content = "Mapa no cargado",
+            Content = "Mapa no cargado: "..mapName,
             Duration = 3
         })
         return
     end
 
-    local part
-    for _, v in ipairs(map:GetDescendants()) do
-        if v:IsA("BasePart") then
-            part = v
-            break
-        end
+    local part = getSafePart(mapModel)
+    if not part then
+        Rayfield:Notify({
+            Title = "RideStorm",
+            Content = "No se encontró punto seguro",
+            Duration = 3
+        })
+        return
     end
 
-    if part then
-        hrp.CFrame = part.CFrame + Vector3.new(0,10,0)
-    end
+    hrp.CFrame = part.CFrame + Vector3.new(0, 12, 0)
 end
-
 
 TeleportTab:CreateDropdown({
     Name = "Selecciona un mapa",
-    Options = (function() local t={} for _,v in ipairs(Teleports) do table.insert(t,v[1]) end return t end)(),
+    Options = (function()
+        local t = {}
+        for _, v in ipairs(Teleports) do
+            table.insert(t, v[1])
+        end
+        return t
+    end)(),
     CurrentOption = "Spawn",
     Callback = function(option)
-        selectedMap = option
+        selectedMapName = option
     end
 })
 
 TeleportTab:CreateButton({
-    Name = "📍 Teleport",
+    Name = "📍 Teletransportar",
     Callback = function()
-        for _, t in ipairs(Teleports) do
-            if t[1] == selectedMap then
-                teleportTo(t[2])
+        for _, v in ipairs(Teleports) do
+            if v[1] == selectedMapName then
+                teleportToMap(v[2])
+                break
             end
         end
     end
 })
+
 
 --------------------------
 -- AUTOFARM CAJAS
@@ -171,6 +189,41 @@ DeliveryTab:CreateToggle({
         end
     end
 })
+
+-- ALTURA DE VUELO
+RS.FlyHeight = RS.FlyHeight or 200
+RS.HideWheels = RS.HideWheels or false
+
+DeliveryTab:CreateSlider({
+    Name = "Altura de vuelo",
+    Range = {50, 600},
+    Increment = 10,
+    Suffix = " studs",
+    CurrentValue = RS.FlyHeight,
+    Callback = function(v)
+        RS.FlyHeight = v
+    end
+})
+
+DeliveryTab:CreateSlider({
+    Name = "Velocidad (km/h) | Aumente con cuidado",
+    Range = {50, 1000},
+    Increment = 5,
+    Suffix = " km/h",
+    CurrentValue = RS.SpeedKMH,
+    Callback = function(v)
+        RS.SpeedKMH = v
+    end
+})
+
+DeliveryTab:CreateToggle({
+    Name = "🛞 Esconder llantas",
+    CurrentValue = RS.HideWheels,
+    Callback = function(v)
+        RS.HideWheels = v
+    end
+})
+
 
 --------------------------
 -- MONEY TRACKER
@@ -266,6 +319,25 @@ MiscTab:CreateToggle({
         end
     end
 })
+
+--------------------------
+-- SESSION TIME
+--------------------------
+local sessionStart = os.time()
+local sessionLabel = MiscTab:CreateLabel("⏱️ Sesión: 00:00")
+
+task.spawn(function()
+    while true do
+        local elapsed = os.time() - sessionStart
+        local min = math.floor(elapsed / 60)
+        local sec = elapsed % 60
+        sessionLabel:Set(
+            string.format("⏱️ Sesión: %02d:%02d", min, sec)
+        )
+        task.wait(1)
+    end
+end)
+
 
 MiscTab:CreateButton({
    Name = "Close Hub",

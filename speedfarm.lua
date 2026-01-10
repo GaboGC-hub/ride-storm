@@ -21,7 +21,6 @@ local hiddenWheels = {}
 local function getSeat()
     local char = Player.Character
     if not char then return end
-
     hum = char:FindFirstChildOfClass("Humanoid")
     hrp = char:FindFirstChild("HumanoidRootPart")
     seat = hum and hum.SeatPart
@@ -79,6 +78,8 @@ local function start()
 
     active = true
 
+
+
     if RS.HideWheels then
         hideWheels()
     end
@@ -88,14 +89,12 @@ local function start()
     att0 = Instance.new("Attachment", seat)
     att1 = Instance.new("Attachment", workspace.Terrain)
 
-
     ap = Instance.new("AlignPosition", seat)
     ap.Attachment0 = att0
     ap.Attachment1 = att1
     ap.MaxForce = math.huge
     ap.MaxVelocity = 1000
     ap.Responsiveness = 200
-
 
     ao = Instance.new("AlignOrientation", seat)
     ao.Attachment0 = att0
@@ -109,21 +108,16 @@ local function start()
         seat.Position.Z
     )
 
-
-
     att1.WorldPosition = basePos
     att1.WorldCFrame = seat.CFrame
 
-
     sitConn = RunService.Stepped:Connect(function()
         if not RS.SpeedFarm then return end
-
         if hum.SeatPart ~= seat then
             hrp.CFrame = seat.CFrame
             seat:Sit(hum)
         end
     end)
-
 
     task.spawn(function()
         while RS.SpeedFarm do
@@ -131,13 +125,6 @@ local function start()
             local forward = att1.WorldPosition + seat.CFrame.LookVector * speed
             att1.WorldPosition = Vector3.new(forward.X, RS.FlyHeight, forward.Z)
             task.wait(0.1)
-
-
-
-
-
-
-
         end
     end)
 end
@@ -162,3 +149,7 @@ end
 RunService.Heartbeat:Connect(function()
     if RS.SpeedFarm then
         if not active then start() end
+    else
+        if active then stop() end
+    end
+end)

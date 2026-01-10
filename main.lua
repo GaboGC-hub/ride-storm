@@ -295,6 +295,7 @@ PlayerTab:CreateToggle({
 })
 
 local VehicleNoclipConn
+local antiFallForce
 
 PlayerTab:CreateToggle({
     Name = "Noclip Vehículo",
@@ -304,6 +305,10 @@ PlayerTab:CreateToggle({
             if VehicleNoclipConn then
                 VehicleNoclipConn:Disconnect()
                 VehicleNoclipConn = nil
+            end
+            if antiFallForce then
+                antiFallForce:Destroy()
+                antiFallForce = nil
             end
             return
         end
@@ -315,17 +320,32 @@ PlayerTab:CreateToggle({
             local hum = char:FindFirstChildOfClass("Humanoid")
             if not hum or not hum.SeatPart then return end
 
-            local vehicle = hum.SeatPart:FindFirstAncestorOfClass("Model")
+            local seat = hum.SeatPart
+            local vehicle = seat:FindFirstAncestorOfClass("Model")
             if not vehicle then return end
 
+            -- noclip real
             for _, part in ipairs(vehicle:GetDescendants()) do
                 if part:IsA("BasePart") then
                     part.CanCollide = false
                 end
             end
+
+            -- anti-caída (fuerza vertical)
+            if not antiFallForce then
+                local att = Instance.new("Attachment")
+                att.Parent = seat
+
+                antiFallForce = Instance.new("VectorForce")
+                antiFallForce.Attachment0 = att
+                antiFallForce.Force = Vector3.new(0, workspace.Gravity * seat.AssemblyMass, 0)
+                antiFallForce.RelativeTo = Enum.ActuatorRelativeTo.World
+                antiFallForce.Parent = seat
+            end
         end)
     end
 })
+
 
 local VehicleNoclipConn
 local lastY

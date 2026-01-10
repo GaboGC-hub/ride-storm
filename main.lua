@@ -269,47 +269,71 @@ end)
 --------------------------
 -- PLAYER UTILITIES
 --------------------------
+local NoclipConn
+
 PlayerTab:CreateToggle({
-    Name = "Noclip (estable)",
+    Name = "Noclip",
     CurrentValue = false,
     Callback = function(v)
-        if v then
-            RS._noclipConn = RunService.Stepped:Connect(function()
-                local char = player.Character
-                if not char then return end
-                for _, p in ipairs(char:GetChildren()) do
-                    if p:IsA("BasePart") then
-                        p.CanCollide = false
-                        p.AssemblyLinearVelocity = Vector3.zero
-                    end
-                end
-            end)
-        else
-            if RS._noclipConn then
-                RS._noclipConn:Disconnect()
-                RS._noclipConn = nil
-            end
+        if not v then
+            if NoclipConn then NoclipConn:Disconnect() end
+            return
         end
+
+        NoclipConn = RunService.Heartbeat:Connect(function()
+            local char = player.Character
+            if not char then return end
+
+            for _, p in ipairs(char:GetDescendants()) do
+                if p:IsA("BasePart") then
+                    p.CanCollide = false
+                end
+            end
+        end)
     end
 })
+
     
 
 --------------------------
 -- MISC UTILITIES
 --------------------------
+local AntiAFKConn
+local cam = workspace.CurrentCamera
+
 MiscTab:CreateToggle({
     Name = "Anti-AFK",
     CurrentValue = true,
     Callback = function(v)
-        if v then
-            player.Idled:Connect(function()
-                VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-                task.wait(1)
-                VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-            end)
+        if not v then
+            if AntiAFKConn then AntiAFKConn:Disconnect() end
+            return
         end
+
+        -- Evento Idle
+        player.Idled:Connect(function()
+            VirtualUser:CaptureController()
+            VirtualUser:ClickButton2(Vector2.new(0,0))
+        end)
+
+        -- Movimiento real cada 30s
+        AntiAFKConn = task.spawn(function()
+            while v do
+                local char = player.Character
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+                if hum then
+                    hum:Move(Vector3.new(0,0,-1), true)
+                    task.wait(0.1)
+                    hum:Move(Vector3.zero, true)
+                end
+                -- pequeño movimiento de cámara
+                cam.CFrame = cam.CFrame * CFrame.Angles(0, math.rad(0.5), 0)
+                task.wait(30)
+            end
+        end)
     end
 })
+
 
 MiscTab:CreateButton({
    Name = "Close Hub",

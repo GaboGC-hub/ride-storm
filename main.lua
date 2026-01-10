@@ -159,7 +159,7 @@ DeliveryTab:CreateToggle({
         RS.Farming = v
 
         if v then
-            teleportTo("JOB1")
+            teleportToMap("JOB1")
 
             if not RS._loaded.autofarm then
                 safeLoad("https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/autofarm.lua")

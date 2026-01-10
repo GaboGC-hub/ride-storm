@@ -15,6 +15,41 @@ local wheelWelds = {}
 local hiddenWheels = {}
 
 --------------------------------------------------
+-- NOCLIP VEHÍCULO (AUTO con SpeedFarm)
+--------------------------------------------------
+local VehicleNoclipConn
+
+local function startVehicleNoclip()
+    if VehicleNoclipConn then return end
+
+    VehicleNoclipConn = RunService.Heartbeat:Connect(function()
+        if not RS.SpeedFarm then return end
+
+        local char = Player.Character
+        if not char then return end
+
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if not hum or not hum.SeatPart then return end
+
+        local vehicle = hum.SeatPart:FindFirstAncestorOfClass("Model")
+        if not vehicle then return end
+
+        for _, part in ipairs(vehicle:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+    end)
+end
+
+local function stopVehicleNoclip()
+    if VehicleNoclipConn then
+        VehicleNoclipConn:Disconnect()
+        VehicleNoclipConn = nil
+    end
+end
+
+--------------------------------------------------
 -- UTILIDADES
 --------------------------------------------------
 
@@ -148,8 +183,10 @@ end
 
 RunService.Heartbeat:Connect(function()
     if RS.SpeedFarm then
+        startVehicleNoclip()
         if not active then start() end
     else
+        stopVehicleNoclip()
         if active then stop() end
     end
 end)

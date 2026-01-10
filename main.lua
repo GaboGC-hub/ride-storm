@@ -64,21 +64,22 @@ RS._loaded = RS._loaded or {}
 -- TELEPORT SYSTEM (FIXED)
 --------------------------
 local Teleports = {
-    {"Irish Islands", "mapa2"},
-    {"Alp Mountains", "mapa3"},
-    {"Track / Drag Strip", "mapa4"},
-    {"Highway", "mapa5"},
-    {"Stello Pass", "mapa6"},
-    {"Spawn", "mapa7"},
-    {"Canyons / Route 66", "mapa8"},
-    {"Sunset Beach", "mapa9"},
-    {"The Pit", "mapa1"},
-    {"Enduro Course", "mapa10"},
-    {"The States", "mapa11"},
-    {"Isle of Man TT", "mapa12"},
-    {"Vintage Islands", "mapa13"},
-    {"Truckers Bay (JOB)", "JOB1"},
+    ["Irish Islands"]       = "mapa2",
+    ["Alp Mountains"]       = "mapa3",
+    ["Track / Drag Strip"]  = "mapa4",
+    ["Highway"]             = "mapa5",
+    ["Stello Pass"]         = "mapa6",
+    ["Spawn"]               = "mapa7",
+    ["Canyons / Route 66"]  = "mapa8",
+    ["Sunset Beach"]        = "mapa9",
+    ["The Pit"]             = "mapa1",
+    ["Enduro Course"]       = "mapa10",
+    ["The States"]          = "mapa11",
+    ["Isle of Man TT"]      = "mapa12",
+    ["Vintage Islands"]     = "mapa13",
+    ["Truckers Bay (JOB)"]  = "JOB1",
 }
+
 
 local selectedMapName = "Spawn"
 
@@ -97,55 +98,61 @@ local function teleportToMap(mapName)
     local char = player.Character or player.CharacterAdded:Wait()
     local hrp = char:WaitForChild("HumanoidRootPart")
 
-    local mapModel = workspace:FindFirstChild(mapName)
-    if not mapModel then
+    local map = workspace:FindFirstChild(mapName)
+    if not map then
         Rayfield:Notify({
             Title = "RideStorm",
-            Content = "Mapa no cargado: "..mapName,
+            Content = "Mapa no encontrado: "..mapName,
             Duration = 3
         })
         return
     end
 
-    local part = getSafePart(mapModel)
-    if not part then
+    -- Prioridad de spawn
+    local target =
+        map:FindFirstChild("Spawn", true)
+        or map:FindFirstChild("SpawnLocation", true)
+        or map:FindFirstChild("Teleport", true)
+        or map:FindFirstChildWhichIsA("BasePart", true)
+
+    if not target then
         Rayfield:Notify({
             Title = "RideStorm",
-            Content = "No se encontró punto seguro",
+            Content = "No se encontró punto de TP",
             Duration = 3
         })
         return
     end
 
-    hrp.CFrame = part.CFrame + Vector3.new(0, 12, 0)
+    hrp.CFrame = target.CFrame + Vector3.new(0, 8, 0)
 end
+
+
+local selectedMap = "Spawn"
 
 TeleportTab:CreateDropdown({
     Name = "Selecciona un mapa",
     Options = (function()
         local t = {}
-        for _, v in ipairs(Teleports) do
-            table.insert(t, v[1])
+        for name in pairs(Teleports) do
+            table.insert(t, name)
         end
+        table.sort(t)
         return t
     end)(),
     CurrentOption = "Spawn",
-    Callback = function(option)
-        selectedMapName = option
+    Callback = function(opt)
+        selectedMap = opt
     end
 })
 
 TeleportTab:CreateButton({
     Name = "📍 Teletransportar",
     Callback = function()
-        for _, v in ipairs(Teleports) do
-            if v[1] == selectedMapName then
-                teleportToMap(v[2])
-                break
-            end
-        end
+        teleportToMap(Teleports[selectedMap])
     end
 })
+
 
 
 --------------------------

@@ -94,7 +94,7 @@ local function getSafePart(model)
     end
 end
 
-local function teleportToMap(mapName)
+local function teleportTo(mapName)
     local char = player.Character or player.CharacterAdded:Wait()
     local hrp = char:WaitForChild("HumanoidRootPart")
 
@@ -187,7 +187,7 @@ DeliveryTab:CreateToggle({
         RS.Farming = v
 
         if v then
-            teleportToMap("JOB1")
+            teleportTo("JOB1")
 
             if not RS._loaded.autofarm then
                 safeLoad("https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/autofarm.lua")

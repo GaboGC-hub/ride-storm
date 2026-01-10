@@ -190,31 +190,6 @@ DeliveryTab:CreateToggle({
     end
 })
 
--- ALTURA DE VUELO
-RS.FlyHeight = RS.FlyHeight or 200
-
-DeliveryTab:CreateSlider({
-    Name = "Altura de vuelo",
-    Range = {50, 600},
-    Increment = 10,
-    Suffix = " studs",
-    CurrentValue = RS.FlyHeight,
-    Callback = function(v)
-        RS.FlyHeight = v
-    end
-})
-
-DeliveryTab:CreateSlider({
-    Name = "Velocidad (km/h) | Aumente con cuidado",
-    Range = {50, 1000},
-    Increment = 5,
-    Suffix = " km/h",
-    CurrentValue = RS.SpeedKMH,
-    Callback = function(v)
-        RS.SpeedKMH = v
-    end
-})
-
 --------------------------
 -- MONEY TRACKER
 --------------------------

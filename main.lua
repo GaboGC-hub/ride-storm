@@ -64,20 +64,11 @@ RS._loaded = RS._loaded or {}
 -- TELEPORT SYSTEM (FIXED)
 --------------------------
 local TeleportMap = {
-    ["Irish Islands"] = "mapa2",
-    ["Alp Mountains"] = "mapa3",
-    ["Track / Drag Strip"] = "mapa4",
-    ["Highway"] = "mapa5",
-    ["Stello Pass"] = "mapa6",
-    ["Spawn"] = "mapa7",
-    ["Canyons / Route 66"] = "mapa8",
-    ["Sunset Beach"] = "mapa9",
-    ["The Pit"] = "mapa1",
-    ["Enduro Course"] = "mapa10",
-    ["The States"] = "mapa11",
-    ["Isle of Man TT"] = "mapa12",
-    ["Vintage Islands"] = "mapa13",
-    ["Truckers Bay (JOB)"] = "JOB1",
+    ["Spawn"] = "mapa1",
+    ["Race Track"] = "mapa2",
+    ["Morton Canyon"] = "mapa3",
+    ["Highway"] = "mapa4",
+    ["Paint Shop"] = "mapa5",
 }
 
 
@@ -171,29 +162,6 @@ TeleportTab:CreateButton({
 })
 
 
-
-
-
---------------------------
--- AUTOFARM CAJAS
---------------------------
-DeliveryTab:CreateSection("📦 Auto Delivery")
-DeliveryTab:CreateToggle({
-    Name = "📦 Auto Delivery (Cajas)",
-    CurrentValue = false,
-    Callback = function(v)
-        RS.Farming = v
-
-        if v then
-            teleportTo("JOB1")
-
-            if not RS._loaded.autofarm then
-                safeLoad("https://raw.githubusercontent.com/GaboGC-hub/ride-storm/main/autofarm.lua")
-                RS._loaded.autofarm = true
-            end
-        end
-    end
-})
 
 --------------------------
 -- SPEED FARM
